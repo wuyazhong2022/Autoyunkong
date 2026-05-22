@@ -122,6 +122,7 @@ function loadAdminScripts() {
                   <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">分类</th>
                   <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">归属</th>
                   <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">更新时间</th>
+                  <th style="padding:12px;text-align:left;border-bottom:1px solid #ddd;">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,6 +137,10 @@ function loadAdminScripts() {
                         '<span style="background:#27ae60;color:white;padding:2px 8px;border-radius:4px;font-size:12px;">用户:' + script.owner + '</span>'}
                     </td>
                     <td style="padding:12px;">${formatTimestamp(script.updateTime)}</td>
+                    <td style="padding:12px;">
+                      <button onclick="adminEditScript(${script.id})" style="padding:6px 12px;font-size:12px;margin-right:8px;">编辑</button>
+                      <button onclick="adminDeleteScript(${script.id})" style="padding:6px 12px;font-size:12px;background:#e74c3c;color:white;border:none;border-radius:4px;">删除</button>
+                    </td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -149,6 +154,49 @@ function loadAdminScripts() {
     .catch(err => {
       console.error('加载脚本列表失败:', err);
       document.getElementById('adminScriptList').innerHTML = '<div style="text-align: center; color: #e74c3c; padding: 40px;">加载失败</div>';
+    });
+}
+
+function adminEditScript(id) {
+  fetch(`/api/scripts/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success') {
+        document.getElementById('modalTitle').textContent = '管理员编辑脚本';
+        document.getElementById('editScriptId').value = data.script.id;
+        document.getElementById('scriptName').value = data.script.name;
+        document.getElementById('scriptCategory').value = data.script.category || '';
+        document.getElementById('scriptCode').value = data.script.code;
+        document.getElementById('changeNote').value = '';
+        if (typeof updateLineNumbers === 'function') {
+          updateLineNumbers();
+        }
+        if (data.script.history && data.script.history.length > 0) {
+          document.getElementById('historyBtn').style.display = 'inline-block';
+        } else {
+          document.getElementById('historyBtn').style.display = 'none';
+        }
+        document.getElementById('scriptModal').style.display = 'flex';
+      }
+    })
+    .catch(err => console.error('加载脚本详情失败:', err));
+}
+
+function adminDeleteScript(id) {
+  if (!confirm('确定要删除这个脚本吗？')) return;
+  fetch(`/api/scripts/${id}?username=${encodeURIComponent(currentUser)}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('删除成功');
+        loadAdminScripts();
+      } else {
+        alert('删除失败: ' + data.msg);
+      }
+    })
+    .catch(err => {
+      console.error('删除脚本失败:', err);
+      alert('删除失败');
     });
 }
 

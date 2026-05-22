@@ -604,7 +604,21 @@ app.use(route.put('/api/scripts/:id', function (ctx, id) {
             return;
         }
         
-        const { name, code, category, changeNote } = ctx.request.body;
+        const { name, code, category, changeNote, username } = ctx.request.body;
+        
+        // 检查权限：只有脚本所有者或超级管理员可以编辑
+        if (username) {
+            const user = users.find(u => u.username === username);
+            const isOwner = scripts[scriptIndex].owner === username;
+            const isAdminUser = user && user.isAdmin;
+            
+            if (!isOwner && !isAdminUser) {
+                ctx.status = 403;
+                ctx.body = JSON.stringify({ status: 'error', msg: '权限不足，只有脚本所有者或超级管理员可以编辑此脚本' });
+                ctx.set('Content-Type', 'application/json');
+                return;
+            }
+        }
         
         // 保存历史版本
         // 先初始化history属性（如果不存在）
@@ -659,6 +673,21 @@ app.use(route.delete('/api/scripts/:id', function (ctx, id) {
             ctx.body = JSON.stringify({ status: 'error', msg: '脚本不存在' });
             ctx.set('Content-Type', 'application/json');
             return;
+        }
+        
+        // 检查权限：只有脚本所有者或超级管理员可以删除
+        const username = ctx.query.username;
+        if (username) {
+            const user = users.find(u => u.username === username);
+            const isOwner = scripts[scriptIndex].owner === username;
+            const isAdminUser = user && user.isAdmin;
+            
+            if (!isOwner && !isAdminUser) {
+                ctx.status = 403;
+                ctx.body = JSON.stringify({ status: 'error', msg: '权限不足，只有脚本所有者或超级管理员可以删除此脚本' });
+                ctx.set('Content-Type', 'application/json');
+                return;
+            }
         }
         
         const deletedScript = scripts.splice(scriptIndex, 1)[0];

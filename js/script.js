@@ -19,7 +19,8 @@ function updateScriptTable(scriptList) {
   } else {
     tbody.innerHTML = scriptList.map(script => {
       const ownerTag = script.owner === 'system' ? '<span style="background:#3498db;color:white;padding:2px 6px;border-radius:3px;font-size:11px;">系统</span>' : (script.isOwner ? '<span style="background:#27ae60;color:white;padding:2px 6px;border-radius:3px;font-size:11px;">我的</span>' : '<span style="background:#95a5a6;color:white;padding:2px 6px;border-radius:3px;font-size:11px;">其他</span>');
-      const actionButtons = script.isOwner ? `
+      const canEdit = script.isOwner || isAdmin;
+      const actionButtons = canEdit ? `
         <button onclick="editScript(${script.id})">编辑</button>
         <button class="danger" onclick="deleteScript(${script.id})">删除</button>
       ` : `
@@ -422,7 +423,7 @@ function saveScript() {
 
 function deleteScript(id) {
   if (!confirm('确定要删除这个脚本吗？')) return;
-  fetch(`/api/scripts/${id}`, { method: 'DELETE' })
+  fetch(`/api/scripts/${id}?username=${encodeURIComponent(currentUser)}`, { method: 'DELETE' })
     .then(res => res.json())
     .then(data => {
       if (data.status === 'success') {
