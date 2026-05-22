@@ -1,0 +1,108 @@
+[
+  {
+    "id": 1,
+    "name": "示例脚本-获取设备信息",
+    "code": "toast('设备型号: ' + device.model);\nlog('系统版本: ' + device.release);\nlog('屏幕宽度: ' + device.width);\nlog('屏幕高度: ' + device.height);",
+    "category": "工具类",
+    "createTime": "2026-04-29T03:03:43.981Z",
+    "updateTime": "2026-04-29T03:03:43.982Z"
+  },
+  {
+    "id": 2,
+    "name": "示例脚本-自动滑动",
+    "code": "auto();\nfor(let i = 0; i < 10; i++) {\n    swipe(500, 1500, 500, 500, 500);\n    sleep(2000);\n}",
+    "category": "操作类",
+    "createTime": "2026-04-29T03:03:43.982Z",
+    "updateTime": "2026-04-29T03:03:43.982Z"
+  },
+  {
+    "id": 3,
+    "name": "11",
+    "code": "11",
+    "category": "11",
+    "createTime": "2026-04-29T03:17:43.784Z",
+    "updateTime": "2026-04-29T03:17:43.784Z"
+  },
+  {
+    "id": 4,
+    "name": "解锁循环测试",
+    "code": "device.wakeUpIfNeeded(); // 亮屏\n                                            sleep(random(1500, 1800)); // 等待屏幕亮起\n                                            toastLog(\"上滑解锁\")\n                                            // 全能滑动(w * 0.7, h * 0.65, w * 0.8, h * 0.2, aw随机(800, 1200));\n\n\n                                            swipe(36, 1600, 36, 300, 500); // 上滑解锁屏幕\n//测试回个人主页()\nfunction 测试回个人主页() {\n    var 最大尝试次数 = 600;\n    var 开始时间 = new Date().getTime();\n\n    for (var i = 0; i < 最大尝试次数; i++) {\n        // 检查是否在评论区\n        var 评论区 = className(\"android.widget.TextView\").text(\"获赞\").visibleToUser(true).findOnce();\n\n        if (评论区) {\n            var 耗时 = ((new Date().getTime() - 开始时间) / 1000).toFixed(1);\n            console.log(\"✓ 已返个人主页 (耗时: \" + 耗时 + \"秒)\");\n\n            sleep(2000);\n            return true;\n        }\n\n        // 不在评论区，执行返回操作\n        // back();\n        console.log(\"不在主页，执行返回 \" + (i + 1) + \"/\" + 最大尝试次数);\n        sleep(2000);\n    }\n\n    // 尝试了多次仍无法返回评论区\n    console.log(\"× 无法返回个人主页(已尝试 \" + 最大尝试次数 + \" 次)\");\n    return false;\n};",
+    "category": "解锁循环测试",
+    "createTime": "2026-04-29T03:26:18.022Z",
+    "updateTime": "2026-05-06T14:27:33.689Z"
+  },
+  {
+    "id": 5,
+    "name": "11",
+    "code": "11",
+    "category": "11",
+    "createTime": "2026-04-29T08:25:01.780Z",
+    "updateTime": "2026-04-29T08:25:01.780Z"
+  },
+  {
+    "id": 6,
+    "name": "44",
+    "code": "66",
+    "category": "66",
+    "createTime": "2026-05-06T09:01:21.772Z",
+    "updateTime": "2026-05-06T09:01:21.772Z"
+  },
+  {
+    "id": 7,
+    "name": "锁屏",
+    "code": "var accessibility = android.accessibilityservice.AccessibilityService;\n\nlog(\"点击确定后立即锁屏\"); // 锁屏前给用户一个确认框\n\nvar success = auto.service.performGlobalAction(accessibility.GLOBAL_ACTION_LOCK_SCREEN);\n\nif (success) {\n    console.log(\"锁屏成功\");\n} else {\n    console.log(\"锁屏失败，请检查无障碍服务是否开启\");\n}",
+    "category": "锁屏",
+    "createTime": "2026-05-06T14:29:25.701Z",
+    "updateTime": "2026-05-06T14:29:25.701Z"
+  },
+  {
+    "id": 9,
+    "name": "222",
+    "code": "22\n土木工程\n三",
+    "category": "22",
+    "owner": "15077352220",
+    "createTime": "2026-05-07T04:25:26.374Z",
+    "updateTime": "2026-05-11T08:37:45.460Z",
+    "history": [
+      {
+        "version": 2,
+        "timestamp": "2026-05-11T08:37:45.460Z",
+        "changeNote": "检测2",
+        "data": {
+          "id": 9,
+          "name": "222",
+          "code": "22\n土木工程",
+          "category": "22",
+          "owner": "15077352220",
+          "createTime": "2026-05-07T04:25:26.374Z",
+          "updateTime": "2026-05-11T08:24:35.894Z",
+          "version": 2
+        }
+      },
+      {
+        "version": 1,
+        "timestamp": "2026-05-11T08:24:35.894Z",
+        "changeNote": "增加了",
+        "data": {
+          "id": 9,
+          "name": "222",
+          "code": "22",
+          "category": "22",
+          "owner": "15077352220",
+          "createTime": "2026-05-07T04:25:26.374Z",
+          "updateTime": "2026-05-07T04:25:26.374Z"
+        }
+      }
+    ],
+    "version": 3
+  },
+  {
+    "id": 12,
+    "name": "测试",
+    "code": "测试回个人主页()\nfunction 测试回个人主页() {\n    var 最大尝试次数 = 600;\n    var 开始时间 = new Date().getTime();\n\n    for (var i = 0; i < 最大尝试次数; i++) {\n        // 检查是否在评论区\n        var 评论区 = className(\"android.widget.TextView\").text(\"获赞\").visibleToUser(true).findOnce();\n\n        if (评论区) {\n            var 耗时 = ((new Date().getTime() - 开始时间) / 1000).toFixed(1);\n            console.log(\"✓ 已返个人主页 (耗时: \" + 耗时 + \"秒)\");\n\n            sleep(2000);\n            return true;\n        }\n\n        // 不在评论区，执行返回操作\n        // back();\n        console.log(\"不在主页，执行返回 \" + (i + 1) + \"/\" + 最大尝试次数);\n        sleep(2000);\n    }\n\n    // 尝试了多次仍无法返回评论区\n    console.log(\"× 无法返回个人主页(已尝试 \" + 最大尝试次数 + \" 次)\");\n    return false;\n};",
+    "category": "测试",
+    "owner": "15077352220",
+    "createTime": "2026-05-16T13:14:27.123Z",
+    "updateTime": "2026-05-16T13:14:27.123Z"
+  }
+]

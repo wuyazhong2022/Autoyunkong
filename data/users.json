@@ -1,0 +1,26 @@
+[
+  {
+    "username": "admin",
+    "password": "admin123",
+    "createTime": "2024-01-01T00:00:00.000Z",
+    "isAdmin": true
+  },
+  {
+    "username": "15077352220",
+    "password": "123456",
+    "createTime": "2024-01-01T00:00:00.000Z",
+    "isAdmin": false
+  },
+  {
+    "username": "admin123",
+    "password": "admin123",
+    "createTime": "2024-01-01T00:00:00.000Z",
+    "isAdmin": false
+  },
+  {
+    "username": "test123",
+    "password": "test123",
+    "createTime": "2024-01-01T00:00:00.000Z",
+    "isAdmin": false
+  }
+]
