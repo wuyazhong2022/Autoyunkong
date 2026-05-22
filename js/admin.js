@@ -7,6 +7,69 @@ function showAdminTab(tabName) {
   if (tabName === 'users') loadAdminUsers();
   else if (tabName === 'devices') loadAdminDevices();
   else if (tabName === 'scripts') loadAdminScripts();
+  else if (tabName === 'screenShare') loadScreenShareConfig();
+}
+
+// 加载屏幕共享配置
+function loadScreenShareConfig() {
+  fetch(`/api/admin/screenShareConfig?username=${encodeURIComponent(currentUser)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success') {
+        const config = data.config;
+        const scaleValue = Math.round(config.scale * 100);
+        const qualityValue = config.quality;
+        
+        document.getElementById('screenShareScale').value = scaleValue;
+        document.getElementById('scaleValue').textContent = config.scale.toFixed(2);
+        document.getElementById('screenShareQuality').value = qualityValue;
+        document.getElementById('qualityValue').textContent = qualityValue;
+        
+        updateScreenSharePreview();
+      } else {
+        alert('加载配置失败: ' + data.msg);
+      }
+    })
+    .catch(err => console.error('加载屏幕共享配置失败:', err));
+}
+
+// 更新屏幕共享配置预览
+function updateScreenSharePreview() {
+  const scale = document.getElementById('screenShareScale').value / 100;
+  const quality = document.getElementById('screenShareQuality').value;
+  const sizePercent = Math.round(scale * scale * quality / 100 * 100);
+  
+  document.getElementById('previewScale').textContent = scale.toFixed(2);
+  document.getElementById('previewQuality').textContent = quality;
+  document.getElementById('previewSize').textContent = sizePercent + '%';
+}
+
+// 保存屏幕共享配置
+function saveScreenShareConfig() {
+  const scale = document.getElementById('screenShareScale').value / 100;
+  const quality = parseInt(document.getElementById('screenShareQuality').value);
+  
+  if (!confirm(`确定要保存屏幕共享配置吗？\n缩放: ${scale.toFixed(2)} (${Math.round(scale*100)}%)\n质量: ${quality}%\n\n该配置将立即应用到所有已连接的设备。`)) {
+    return;
+  }
+  
+  fetch(`/api/admin/screenShareConfig?username=${encodeURIComponent(currentUser)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scale: scale, quality: quality })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      alert('屏幕共享配置已保存！\n\n配置已自动应用到所有已连接的设备。\n注意：设备需要重新连接屏幕共享才能应用新配置。');
+    } else {
+      alert('保存失败: ' + data.msg);
+    }
+  })
+  .catch(err => {
+    console.error('保存屏幕共享配置失败:', err);
+    alert('保存失败，请重试');
+  });
 }
 
 function loadAdminUsers() {

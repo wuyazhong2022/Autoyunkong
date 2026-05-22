@@ -747,6 +747,12 @@ let remoteScriptPath = null;
 let screenShareRunning = false;
 let screenShareThread = null;
 
+// 屏幕共享配置：缩放比例和质量（0-100）
+let screenShareConfig = {
+    scale: 0.3,      // 缩放比例，0.3表示30%
+    quality: 50       // 压缩质量，0-100，值越小图片越小但越模糊
+};
+
 function stopRemoteScript() {
     try {
         let currentEngine = engines.myEngine();
@@ -1479,6 +1485,16 @@ function handleServerMessage(text, w) {
                 if (msg.status === 'success') {
                     toast('登录成功');
                     appendLog("✓ 登录成功");
+                    // 如果服务端发送了屏幕共享配置，则应用该配置
+                    if (msg.screenShareConfig) {
+                        if (typeof msg.screenShareConfig.scale === 'number') {
+                            screenShareConfig.scale = Math.max(0.1, Math.min(1.0, msg.screenShareConfig.scale));
+                        }
+                        if (typeof msg.screenShareConfig.quality === 'number') {
+                            screenShareConfig.quality = Math.max(10, Math.min(100, msg.screenShareConfig.quality));
+                        }
+                        appendLog("已应用屏幕共享配置: 缩放=" + screenShareConfig.scale + ", 质量=" + screenShareConfig.quality);
+                    }
                     // 启动实时日志同步
                     startRealtimeLogTimer(w);
                 } else {
@@ -1933,12 +1949,26 @@ function handleRemoteCommand(msg, w) {
         case 'screenShare':
             startScreenShare(w);
             break;
+        case 'updateScreenShareConfig':
+            // 更新屏幕共享配置
+            if (msg.config) {
+                if (typeof msg.config.scale === 'number') {
+                    screenShareConfig.scale = Math.max(0.1, Math.min(1.0, msg.config.scale));
+                }
+                if (typeof msg.config.quality === 'number') {
+                    screenShareConfig.quality = Math.max(10, Math.min(100, msg.config.quality));
+                }
+                appendLog("屏幕共享配置已更新: 缩放=" + screenShareConfig.scale + ", 质量=" + screenShareConfig.quality);
+            }
+            w.send(JSON.stringify({ action: 'remoteAck', type: 'updateScreenShareConfig', status: 'done', config: screenShareConfig, deviceId: currentDeviceId }));
+            break;
         case 'stopScreenShare':
             stopScreenShare();
             w.send(JSON.stringify({ action: 'remoteAck', type: 'stopScreenShare', status: 'stopped', deviceId: currentDeviceId }));
             break;
         case 'connect':
-            w.send(JSON.stringify({ action: 'remoteAck', type: 'connect', status: 'done', deviceId: currentDeviceId }));
+            // 连接时发送当前配置给服务端
+            w.send(JSON.stringify({ action: 'remoteAck', type: 'connect', status: 'done', screenShareConfig: screenShareConfig, deviceId: currentDeviceId }));
             break;
         case 'disconnect':
             stopScreenShare();
@@ -2007,8 +2037,9 @@ function doStartScreenShare(w) {
                     sleep(200);
                     continue;
                 }
-                let scaledImg = images.scale(img, 0.3, 0.3);
-                let imgBase64 = images.toBase64(scaledImg, "png", 50);
+                // 使用可配置的缩放和质量
+                let scaledImg = images.scale(img, screenShareConfig.scale, screenShareConfig.scale);
+                let imgBase64 = images.toBase64(scaledImg, "png", screenShareConfig.quality);
                 w.send(JSON.stringify({
                     action: 'screenFrame',
                     deviceId: currentDeviceId,

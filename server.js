@@ -60,6 +60,45 @@ const DEVICES_FILE = path.join(DATA_DIR, 'devices.json');
 // 持久化设备列表（记录所有用户添加过的设备）
 let persistedDevices = [];
 
+// 屏幕共享配置（控制手机端截图质量）
+let screenShareConfig = {
+    scale: 0.3,      // 缩放比例，0.3表示30%，值越小图片越小但越模糊
+    quality: 50       // 压缩质量，10-100，值越小图片越小但越模糊
+};
+const CONFIG_FILE = './data/config.json';
+
+// 加载配置文件
+function loadConfig() {
+    try {
+        if (fs.existsSync(CONFIG_FILE)) {
+            const data = fs.readFileSync(CONFIG_FILE, 'utf8');
+            const config = JSON.parse(data);
+            if (config.screenShare) {
+                screenShareConfig = { ...screenShareConfig, ...config.screenShare };
+            }
+            console.log('屏幕共享配置已加载:', screenShareConfig);
+        }
+    } catch (error) {
+        console.error('加载配置文件失败:', error);
+    }
+}
+
+// 保存配置文件
+function saveConfig() {
+    try {
+        const config = { screenShare: screenShareConfig };
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+        console.log('屏幕共享配置已保存:', screenShareConfig);
+        return true;
+    } catch (error) {
+        console.error('保存配置文件失败:', error);
+        return false;
+    }
+}
+
+// 初始化时加载配置
+loadConfig();
+
 // 加载设备数据
 function loadDevicesData() {
     try {
@@ -418,6 +457,77 @@ app.use(route.put('/api/admin/users/:username/role', function (ctx, targetUserna
         ctx.set('Content-Type', 'application/json');
     } catch (error) {
         console.error('修改用户角色错误:', error);
+        ctx.status = 500;
+        ctx.body = JSON.stringify({ status: 'error', msg: '服务器内部错误' });
+        ctx.set('Content-Type', 'application/json');
+    }
+}));
+
+// 获取屏幕共享配置
+app.use(route.get('/api/admin/screenShareConfig', function (ctx) {
+    const username = ctx.query.username;
+    try {
+        const user = users.find(u => u.username === username);
+        if (!user || !user.isAdmin) {
+            ctx.status = 403;
+            ctx.body = JSON.stringify({ status: 'error', msg: '权限不足' });
+            ctx.set('Content-Type', 'application/json');
+            return;
+        }
+        
+        ctx.body = JSON.stringify({
+            status: 'success',
+            config: screenShareConfig
+        });
+        ctx.set('Content-Type', 'application/json');
+    } catch (error) {
+        console.error('获取屏幕共享配置错误:', error);
+        ctx.status = 500;
+        ctx.body = JSON.stringify({ status: 'error', msg: '服务器内部错误' });
+        ctx.set('Content-Type', 'application/json');
+    }
+}));
+
+// 更新屏幕共享配置（管理员专用）
+app.use(route.post('/api/admin/screenShareConfig', function (ctx) {
+    const username = ctx.query.username;
+    try {
+        const user = users.find(u => u.username === username);
+        if (!user || !user.isAdmin) {
+            ctx.status = 403;
+            ctx.body = JSON.stringify({ status: 'error', msg: '权限不足' });
+            ctx.set('Content-Type', 'application/json');
+            return;
+        }
+        
+        const body = ctx.request.body;
+        if (typeof body.scale === 'number') {
+            screenShareConfig.scale = Math.max(0.1, Math.min(1.0, body.scale));
+        }
+        if (typeof body.quality === 'number') {
+            screenShareConfig.quality = Math.max(10, Math.min(100, body.quality));
+        }
+        
+        saveConfig();
+        
+        // 向所有已连接的设备广播新的配置
+        devices.forEach((device) => {
+            if (device.ws && device.ws.readyState === 1) {
+                device.ws.send(JSON.stringify({
+                    action: 'updateScreenShareConfig',
+                    config: screenShareConfig
+                }));
+            }
+        });
+        
+        ctx.body = JSON.stringify({
+            status: 'success',
+            msg: '屏幕共享配置已更新',
+            config: screenShareConfig
+        });
+        ctx.set('Content-Type', 'application/json');
+    } catch (error) {
+        console.error('更新屏幕共享配置错误:', error);
         ctx.status = 500;
         ctx.body = JSON.stringify({ status: 'error', msg: '服务器内部错误' });
         ctx.set('Content-Type', 'application/json');
@@ -951,7 +1061,8 @@ app.ws.use(route.all('/', function (ctx) {
                 ws.send(JSON.stringify({
                     status: 'success',
                     action: 'login',
-                    msg: '登录成功'
+                    msg: '登录成功',
+                    screenShareConfig: screenShareConfig
                 }));
                 return;
             }
