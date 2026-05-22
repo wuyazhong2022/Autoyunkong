@@ -570,17 +570,26 @@ function gcUpdateScreenCards() {
   // 获取适配模式配置
   const fitMode = gcGlobalConfigData?.screen?.fitMode || 'contain';
   
-  // 按连接状态排序：在线的排在前面，离线的排在后面
+  // 按设备在线状态和屏幕共享连接状态排序
+  // 优先级：1. 设备在线且屏幕共享已连接  2. 设备在线但屏幕共享未连接  3. 设备离线且屏幕共享未连接
   const sortedDevices = [...gcAllDevices].sort((a, b) => {
     const deviceIdA = a.deviceId;
     const deviceIdB = b.deviceId;
+    const isOnlineA = a.info?.status === 'online';
+    const isOnlineB = b.info?.status === 'online';
     const statusA = gcScreenShareDevices.get(deviceIdA);
     const statusB = gcScreenShareDevices.get(deviceIdB);
     const isConnectedA = statusA && statusA.connected;
     const isConnectedB = statusB && statusB.connected;
-    // 在线状态（true = 1）在前，离线状态（false = 0）在后
+    
+    // 设备在线状态优先排序
+    if (isOnlineA && !isOnlineB) return -1;
+    if (!isOnlineA && isOnlineB) return 1;
+    
+    // 设备都在线时，按屏幕共享连接状态排序
     if (isConnectedA && !isConnectedB) return -1;
     if (!isConnectedA && isConnectedB) return 1;
+    
     return 0;
   });
   
@@ -588,9 +597,8 @@ function gcUpdateScreenCards() {
   let onlineCount = 0;
   let offlineCount = 0;
   sortedDevices.forEach(device => {
-    const screenStatus = gcScreenShareDevices.get(device.deviceId);
-    const isConnected = screenStatus && screenStatus.connected;
-    if (isConnected) {
+    const isOnline = device.info?.status === 'online';
+    if (isOnline) {
       onlineCount++;
     } else {
       offlineCount++;
