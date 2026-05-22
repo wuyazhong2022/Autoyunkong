@@ -6,19 +6,6 @@ function switchTaskMode() {
   document.getElementById('customCodeMode').style.display = mode === 'custom' ? 'block' : 'none';
 }
 
-// 显示发送消息输入框
-function showSendMessageInput() {
-  document.getElementById('sendMessageGroup').style.display = 'block';
-  document.getElementById('openAppGroup').style.display = 'none';
-  document.getElementById('messageContent').focus();
-}
-
-// 隐藏发送消息输入框
-function hideSendMessageInput() {
-  document.getElementById('sendMessageGroup').style.display = 'none';
-  document.getElementById('messageContent').value = '';
-}
-
 // 显示打开应用输入框
 function showOpenAppInput() {
   document.getElementById('openAppGroup').style.display = 'block';
@@ -50,37 +37,6 @@ function executeQuickAction(actionType) {
   })
   .then(res => res.json())
   .then(data => showMessage('taskMessage', data.msg, data.status === 'success' ? 'success' : 'error'))
-  .catch(err => showMessage('taskMessage', '执行失败: ' + err.message, 'error'));
-}
-
-// 执行发送消息
-function executeSendMessage() {
-  const content = document.getElementById('messageContent').value.trim();
-  const targetDevices = getSelectedDevices();
-  
-  if (!content) { 
-    showMessage('taskMessage', '请输入消息内容', 'error'); 
-    return; 
-  }
-  if (targetDevices.length === 0) { 
-    showMessage('taskMessage', '请选择目标设备', 'error'); 
-    return; 
-  }
-  
-  const task = { action: 'sendMessage', content: content };
-  
-  fetch('/api/task', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: currentUser, targetDevices, task })
-  })
-  .then(res => res.json())
-  .then(data => {
-    showMessage('taskMessage', data.msg, data.status === 'success' ? 'success' : 'error');
-    if (data.status === 'success') {
-      hideSendMessageInput();
-    }
-  })
   .catch(err => showMessage('taskMessage', '执行失败: ' + err.message, 'error'));
 }
 
