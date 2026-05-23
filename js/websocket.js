@@ -1699,3 +1699,125 @@ document.addEventListener('click', function(e) {
     closeDeviceLogModal();
   }
 });
+
+// ==================== 日志窗口支持 ====================
+let logWindow = null;
+
+window.openDeviceLog = function(deviceId) {
+  console.log('[日志] 尝试打开设备日志:', deviceId);
+  
+  // 如果窗口已经打开，关闭它
+  if (logWindow && !logWindow.closed) {
+    logWindow.close();
+  }
+  
+  // 打开新窗口
+  logWindow = window.open(
+    'device-log.html?deviceId=' + encodeURIComponent(deviceId),
+    'deviceLog',
+    'width=1000,height=800,location=no,menubar=no,toolbar=no,scrollbars=yes,resizable=yes'
+  );
+  
+  currentLogDeviceId = deviceId;
+  
+  // 等待窗口加载完成
+  logWindow.onload = function() {
+    // 初始化日志显示
+    updateLogDisplay(deviceId);
+    updateRealtimeLogPanel(deviceId);
+    console.log('[日志] 日志窗口已打开, 设备:', deviceId);
+  };
+};
+
+// 为新窗口提供的辅助函数
+window.updateLogDisplayForDevice = function(deviceId, logContentEl, realtimeLogEl, callback) {
+  if (deviceId !== currentLogDeviceId) return;
+  
+  const logs = deviceLogs[deviceId] || [];
+  
+  if (logs.length === 0) {
+    if (logContentEl) logContentEl.innerHTML = '<div style="color:#888;padding:20px;text-align:center;">暂无日志记录</div>';
+  } else {
+    let html = '';
+    logs.forEach(function(log) {
+      let className = 'log-entry';
+      if (log.level === 'error') className += ' log-error';
+      else if (log.level === 'warn') className += ' log-warn';
+      else className += ' log-info';
+      
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      html += '<div class="' + className + '">' + escapeHtml(time + ' - ' + log.msg) + '</div>';
+    });
+    if (logContentEl) {
+      logContentEl.innerHTML = html;
+      logContentEl.scrollTop = logContentEl.scrollHeight;
+    }
+  }
+  
+  callback && callback(logs.length, (realtimeLogs[deviceId] || []).length);
+};
+
+window.updateRealtimeLogPanelForDevice = function(deviceId, realtimeLogEl, callback) {
+  if (deviceId !== currentLogDeviceId) return;
+  
+  const logs = realtimeLogs[deviceId] || [];
+  
+  if (logs.length === 0) {
+    if (realtimeLogEl) realtimeLogEl.innerHTML = '<div style="color:#888;padding:20px;text-align:center;">实时日志等待中...</div>';
+  } else {
+    let html = '';
+    logs.forEach(function(log) {
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      const color = log.source === 'appLog' ? '#8bc34a' : '#03a9f4';
+      const sourceTag = log.source === 'appLog' ? '[APP]' : '[CON]';
+      html += '<div style="margin:2px 0;padding:2px 5px;line-height:1.4;" class="log-entry">';
+      html += '<span style="color:#666;">' + sourceTag + time + '</span> ';
+      html += '<span style="color:' + color + ';">' + escapeHtml(log.msg) + '</span>';
+      html += '</div>';
+    });
+    if (realtimeLogEl) {
+      realtimeLogEl.innerHTML = html;
+      realtimeLogEl.scrollTop = realtimeLogEl.scrollHeight;
+    }
+  }
+  
+  callback && callback(logs.length);
+};
+
+// 重写 updateLogDisplay 函数，支持新窗口
+const originalUpdateLogDisplay = updateLogDisplay;
+window.updateLogDisplay = function(deviceId) {
+  // 如果有新窗口，更新新窗口
+  if (logWindow && !logWindow.closed) {
+    if (logWindow.updateLogDisplay) {
+      logWindow.updateLogDisplay(deviceId);
+    } else {
+      // 窗口还没有加载完成，先更新主窗口
+      originalUpdateLogDisplay(deviceId);
+    }
+  } else {
+    originalUpdateLogDisplay(deviceId);
+  }
+};
+
+// 重写 updateRealtimeLogPanel 函数，支持新窗口
+const originalUpdateRealtimeLogPanel = updateRealtimeLogPanel;
+window.updateRealtimeLogPanel = function(deviceId) {
+  // 如果有新窗口，更新新窗口
+  if (logWindow && !logWindow.closed) {
+    if (logWindow.updateRealtimeLogPanel) {
+      logWindow.updateRealtimeLogPanel(deviceId);
+    } else {
+      // 窗口还没有加载完成，先更新主窗口
+      originalUpdateRealtimeLogPanel(deviceId);
+    }
+  } else {
+    originalUpdateRealtimeLogPanel(deviceId);
+  }
+};
+
+// 重写 openDeviceLogFile 函数，支持新窗口
+const originalOpenDeviceLogFile = openDeviceLogFile;
+window.openDeviceLogFile = function() {
+  originalOpenDeviceLogFile();
+};
