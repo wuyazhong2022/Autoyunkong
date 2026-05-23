@@ -257,7 +257,18 @@
       };
     }
 
+    var isAuthenticated = false;
+    
     function handleMessage(msg) {
+      // 处理登录成功消息
+      if (msg.action === 'login' && msg.status === 'success') {
+        isAuthenticated = true;
+        console.log('[布局分析] 登录成功');
+        // 登录成功后自动请求布局数据
+        refreshLayout();
+        return;
+      }
+      
       // 处理布局数据
       if (msg.action === 'layoutData' && msg.deviceId === currentDeviceId) {
         layoutData = msg.layout;
@@ -269,6 +280,11 @@
     function refreshLayout() {
       if (!ws || ws.readyState !== WebSocket.OPEN) {
         showToast('WebSocket 未连接', 'error');
+        return;
+      }
+      
+      if (!isAuthenticated) {
+        showToast('等待认证...', 'warning');
         return;
       }
       
@@ -420,9 +436,7 @@
     // 页面加载完成后初始化
     window.addEventListener('DOMContentLoaded', function() {
       initWebSocket();
-      
-      // 3秒后自动刷新
-      setTimeout(refreshLayout, 3000);
+      // 登录成功后会自动请求布局数据，这里不需要额外调用
     });
   </script>
 </body>
