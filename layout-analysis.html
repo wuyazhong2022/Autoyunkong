@@ -310,7 +310,6 @@
         toggleIcon.textContent = expanded ? '−' : '+';
         toggleIcon.style.color = '#E91E63';
         toggleIcon.title = expanded ? '点击收起' : '点击展开';
-        toggleIcon.className = 'tree-toggle expandable';
       } else {
         toggleIcon.textContent = '';
         toggleIcon.style.width = '10px';
@@ -329,57 +328,69 @@
       iconSpan.style.marginRight = '3px';
       row.appendChild(iconSpan);
       
-      // 文本信息
-      const textSpan = document.createElement('span');
-      const nodeText = node.text || node.desc || node.className || 'Unknown';
-      const idText = node.id ? ` [${node.id}]` : '';
-      textSpan.textContent = nodeText + idText;
-      textSpan.title = `className: ${node.className}\ntext: ${node.text || ''}\ndesc: ${node.desc || ''}\nid: ${node.id || ''}`;
-      row.appendChild(textSpan);
+      // 节点名称
+      const nameSpan = document.createElement('span');
+      nameSpan.innerHTML = '<b style="color:#1565C0;">' + node.className + '</b>';
+      row.appendChild(nameSpan);
+      
+      // 显示文本
+      let text = node.text || node.desc || node.id || '';
+      if (text) {
+        const textSpan = document.createElement('span');
+        textSpan.style.color = '#666';
+        textSpan.style.marginLeft = '5px';
+        let displayText = text;
+        if (displayText.length > 25) displayText = displayText.substring(0, 25) + '...';
+        textSpan.textContent = '"' + displayText + '"';
+        row.appendChild(textSpan);
+      }
+      
+      // 坐标信息
+      if (node.boundsInScreen) {
+        const boundsSpan = document.createElement('span');
+        boundsSpan.style.color = '#999';
+        boundsSpan.style.fontSize = '11px';
+        boundsSpan.style.marginLeft = '5px';
+        const b = node.boundsInScreen;
+        boundsSpan.textContent = '[' + b.left + ',' + b.top + '-' + b.right + ',' + b.bottom + ']';
+        row.appendChild(boundsSpan);
+      }
       
       item.appendChild(row);
+      container.appendChild(item);
       
       // 子节点容器
-      let childrenContainer = null;
       if (hasChildren) {
-        childrenContainer = document.createElement('div');
-        childrenContainer.style.display = expanded ? 'block' : 'none';
-        node.children.forEach(child => {
-          buildLayoutTree(child, childrenContainer, depth + 1);
-        });
-        item.appendChild(childrenContainer);
+        const childContainer = document.createElement('div');
+        childContainer.className = 'tree-children';
+        childContainer.style.display = expanded ? 'block' : 'none';
+        item.appendChild(childContainer);
         
-        // 点击切换展开/折叠
+        // 点击图标切换
         toggleIcon.onclick = (e) => {
           e.stopPropagation();
           expanded = !expanded;
           toggleIcon.textContent = expanded ? '−' : '+';
-          childrenContainer.style.display = expanded ? 'block' : 'none';
           toggleIcon.title = expanded ? '点击收起' : '点击展开';
+          childContainer.style.display = expanded ? 'block' : 'none';
+          
+          // 如果展开且子节点还没有渲染过，则渲染
+          if (expanded && childContainer.children.length === 0) {
+            node.children.forEach(child => buildLayoutTree(child, childContainer, depth + 1));
+          }
         };
         
-        // 使用立即执行函数捕获当前 node 值
-        row.onclick = (function(currentNode) {
-          return function(e) {
-            e.stopPropagation();
-            expanded = !expanded;
-            toggleIcon.textContent = expanded ? '−' : '+';
-            childrenContainer.style.display = expanded ? 'block' : 'none';
-            toggleIcon.title = expanded ? '点击收起' : '点击展开';
-            showNodeDetails(currentNode);
-          };
-        })(node);
-      } else {
-        // 没有子节点的节点，点击直接显示详情
-        row.onclick = (function(currentNode) {
-          return function(e) {
-            e.stopPropagation();
-            showNodeDetails(currentNode);
-          };
-        })(node);
+        // 如果默认展开，渲染子节点
+        if (expanded) {
+          node.children.forEach(child => buildLayoutTree(child, childContainer, depth + 1));
+        }
       }
       
-      container.appendChild(item);
+      // 点击行显示详情
+      row.onclick = (e) => {
+        if (e.target === toggleIcon) return;
+        showNodeDetails(node);
+      };
     }
     
     // 显示节点详情
