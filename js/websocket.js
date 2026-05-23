@@ -704,6 +704,18 @@ function handleRealtimeLog(deviceId, logs) {
 
 // 更新实时日志面板
 function updateRealtimeLogPanel(deviceId) {
+  // 如果有新窗口，更新新窗口
+  if (window.logWindow && !window.logWindow.closed) {
+    window.updateRealtimeLogPanelForDevice(deviceId, 
+      window.logWindow.document.getElementById('realtimeLogContent'),
+      function(count) {
+        const realCountEl = window.logWindow.document.getElementById('realtimeLogCount');
+        if (realCountEl) realCountEl.textContent = '共 ' + count + ' 条';
+      }
+    );
+    return;
+  }
+
   const content = document.getElementById('realtimeLogContent');
   const count = document.getElementById('realtimeLogCount');
   if (!content) return;
@@ -1138,6 +1150,22 @@ function viewDeviceLogs(deviceId) {
 }
 
 function updateLogDisplay(deviceId) {
+  // 如果有新窗口，更新新窗口
+  if (window.logWindow && !window.logWindow.closed) {
+    window.updateLogDisplayForDevice(deviceId, 
+      window.logWindow.document.getElementById('deviceLogContent'),
+      window.logWindow.document.getElementById('realtimeLogContent'),
+      function(count1, count2) {
+        const logCountEl = window.logWindow.document.getElementById('deviceLogCount');
+        const realCountEl = window.logWindow.document.getElementById('realtimeLogCount');
+        if (logCountEl) logCountEl.textContent = '共 ' + count1 + ' 条';
+        if (realCountEl) realCountEl.textContent = '共 ' + count2 + ' 条';
+      }
+    );
+    return;
+  }
+  
+  // 否则更新模态框
   const content = document.getElementById('deviceLogContent');
   const count = document.getElementById('deviceLogCount');
   if (!content) return;
@@ -1369,67 +1397,76 @@ function openDeviceLogFile() {
 
   isLoadingLogFile = true;
 
-  // 打开新窗口显示日志
-  logFileWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
-  if (!logFileWindow) {
-    alert('无法打开新窗口，请检查浏览器设置允许弹出窗口');
-    isLoadingLogFile = false;
-    return;
-  }
+  // 检查是否在新窗口中
+  if (window.logWindow && !window.logWindow.closed) {
+    // 在新窗口中显示加载状态
+    const logContentEl = window.logWindow.document.getElementById('deviceLogContent');
+    if (logContentEl) {
+      logContentEl.innerHTML = '<div style="color:#888;padding:50px;text-align:center;">正在请求设备日志文件...</div>';
+    }
+  } else {
+    // 否则打开新窗口显示日志
+    logFileWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+    if (!logFileWindow) {
+      alert('无法打开新窗口，请检查浏览器设置允许弹出窗口');
+      isLoadingLogFile = false;
+      return;
+    }
 
-  // 在新窗口中显示加载状态
-  logFileWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>设备日志 - ${currentLogDeviceId}</title>
-      <style>
-        body { background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; margin: 0; padding: 10px; }
-        .loading { color: #888; text-align: center; padding: 50px; }
-        .log-line { margin: 2px 0; padding: 2px 5px; white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
-        .section-title { color: #888; padding: 10px 5px 5px; border-bottom: 1px solid #444; margin-top: 15px; font-weight: bold; }
-        .header { position: sticky; top: 0; background: #2d2d2d; padding: 10px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
-        .header button { padding: 6px 12px; cursor: pointer; border: none; border-radius: 4px; font-size: 12px; }
-        .btn-copy { background: #27ae60; color: white; }
-        .btn-save { background: #3498db; color: white; margin-left: 5px; }
-        .btn-clear { background: #e74c3c; color: white; margin-left: 5px; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <span>设备日志 - ${currentLogDeviceId}</span>
-        <div>
-          <button class="btn-copy" onclick="copyLog()">复制</button>
-          <button class="btn-save" onclick="saveLog()">保存</button>
-          <button class="btn-clear" onclick="clearLog()">清空</button>
+    // 在新窗口中显示加载状态
+    logFileWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>设备日志 - ${currentLogDeviceId}</title>
+        <style>
+          body { background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; margin: 0; padding: 10px; }
+          .loading { color: #888; text-align: center; padding: 50px; }
+          .log-line { margin: 2px 0; padding: 2px 5px; white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
+          .section-title { color: #888; padding: 10px 5px 5px; border-bottom: 1px solid #444; margin-top: 15px; font-weight: bold; }
+          .header { position: sticky; top: 0; background: #2d2d2d; padding: 10px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
+          .header button { padding: 6px 12px; cursor: pointer; border: none; border-radius: 4px; font-size: 12px; }
+          .btn-copy { background: #27ae60; color: white; }
+          .btn-save { background: #3498db; color: white; margin-left: 5px; }
+          .btn-clear { background: #e74c3c; color: white; margin-left: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <span>设备日志 - ${currentLogDeviceId}</span>
+          <div>
+            <button class="btn-copy" onclick="copyLog()">复制</button>
+            <button class="btn-save" onclick="saveLog()">保存</button>
+            <button class="btn-clear" onclick="clearLog()">清空</button>
+          </div>
         </div>
-      </div>
-      <div id="logContent"><div class="loading">正在请求设备日志文件...</div></div>
-      <script>
-        var logData = '';
-        function copyLog() {
-          navigator.clipboard.writeText(document.getElementById('logContent').innerText).then(() => alert('已复制到剪贴板'));
-        }
-        function saveLog() {
-          var blob = new Blob([document.getElementById('logContent').innerText], {type: 'text/plain'});
-          var a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = 'device_log_' + new Date().toISOString().slice(0,10) + '.txt';
-          a.click();
-        }
-        function clearLog() {
-          document.getElementById('logContent').innerHTML = '';
-        }
-        function scrollToBottom() {
-          var el = document.getElementById('logContent');
-          if (el) el.scrollTop = el.scrollHeight;
-        }
-      </script>
-    </body>
-    </html>
-  `);
-  logFileWindow.document.close();
+        <div id="logContent"><div class="loading">正在请求设备日志文件...</div></div>
+        <script>
+          var logData = '';
+          function copyLog() {
+            navigator.clipboard.writeText(document.getElementById('logContent').innerText).then(() => alert('已复制到剪贴板'));
+          }
+          function saveLog() {
+            var blob = new Blob([document.getElementById('logContent').innerText], {type: 'text/plain'});
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'device_log_' + new Date().toISOString().slice(0,10) + '.txt';
+            a.click();
+          }
+          function clearLog() {
+            document.getElementById('logContent').innerHTML = '';
+          }
+          function scrollToBottom() {
+            var el = document.getElementById('logContent');
+            if (el) el.scrollTop = el.scrollHeight;
+          }
+        </script>
+      </body>
+      </html>
+    `);
+    logFileWindow.document.close();
+  }
 
   // 发送请求到设备
   webWs.send(JSON.stringify({
@@ -1440,11 +1477,18 @@ function openDeviceLogFile() {
 
   // 设置超时
   setTimeout(function() {
-    if (isLoadingLogFile && logFileWindow) {
+    if (isLoadingLogFile) {
       isLoadingLogFile = false;
-      try {
-        logFileWindow.document.getElementById('logContent').innerHTML = '<div class="loading" style="color:#ff4444;">请求超时，设备未响应</div>';
-      } catch(e) {}
+      if (window.logWindow && !window.logWindow.closed) {
+        const logContentEl = window.logWindow.document.getElementById('deviceLogContent');
+        if (logContentEl) {
+          logContentEl.innerHTML = '<div style="color:#ff4444;padding:50px;text-align:center;">请求超时，设备未响应</div>';
+        }
+      } else if (logFileWindow) {
+        try {
+          logFileWindow.document.getElementById('logContent').innerHTML = '<div class="loading" style="color:#ff4444;">请求超时，设备未响应</div>';
+        } catch(e) {}
+      }
     }
   }, 15000);
 }
@@ -1460,7 +1504,50 @@ function handleLogFileResponse(deviceId, logContent) {
     return;
   }
 
-  // 检查是否在新窗口中显示
+  // 检查是否在新日志窗口中
+  if (window.logWindow && !window.logWindow.closed) {
+    try {
+      const logContentEl = window.logWindow.document.getElementById('deviceLogContent');
+      if (logContentEl) {
+        if (window.logWindow.renderLogFileContent) {
+          window.logWindow.renderLogFileContent(logContent);
+        } else {
+          let html = '';
+          
+          // 显示日志内容
+          if (logContent && logContent.length > 0) {
+            const lines = logContent.split('\n').filter(function(line) { return line.trim() !== ''; });
+            
+            if (lines.length > 0) {
+              html += '<div style="color:#aaa;padding:10px;border-bottom:1px solid #444;">【控制台日志 - ' + lines.length + ' 条】</div>';
+              
+              lines.forEach(function(line) {
+                let color = '#00ff00';
+                if (line.indexOf('[ERR]') !== -1 || line.indexOf('ERROR') !== -1 || line.indexOf('错误') !== -1 || line.indexOf('失败') !== -1) {
+                  color = '#ff4444';
+                } else if (line.indexOf('[WRN]') !== -1 || line.indexOf('WARN') !== -1 || line.indexOf('警告') !== -1) {
+                  color = '#ffaa00';
+                } else if (line.indexOf('DEBUG') !== -1) {
+                  color = '#3498db';
+                }
+                html += '<div style="margin:2px 0;padding:2px 5px;line-height:1.4;white-space:pre-wrap;word-break:break-all;"><span style="color:' + color + ';">' + escapeHtml(line) + '</span></div>';
+              });
+            }
+          } else {
+            html += '<div style="color:#888;">未找到控制台日志</div>';
+          }
+          
+          logContentEl.innerHTML = html;
+          logContentEl.scrollTop = logContentEl.scrollHeight;
+        }
+        return;
+      }
+    } catch(e) {
+      console.log('新窗口显示日志失败:', e);
+    }
+  }
+
+  // 检查是否在独立日志文件窗口中显示
   if (logFileWindow && !logFileWindow.closed) {
     try {
       const logContentEl = logFileWindow.document.getElementById('logContent');
@@ -1492,7 +1579,6 @@ function handleLogFileResponse(deviceId, logContent) {
         
         logContentEl.innerHTML = html;
         logFileWindow.focus();
-        // 延迟滚动到底部，确保DOM渲染完成
         try {
           setTimeout(function() {
             logContentEl.scrollTop = logContentEl.scrollHeight;

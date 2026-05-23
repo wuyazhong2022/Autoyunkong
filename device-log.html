@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备日志</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #deviceLogHeader {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f9fa;
+    }
+
+    #deviceLogTitle {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #deviceLogCount {
+      font-size: 12px;
+      color: #666;
+      margin-left: 10px;
+    }
+
+    #deviceLogHeader button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      color: white;
+    }
+
+    #btnOpenLogFile {
+      background: #27ae60;
+    }
+
+    #btnToggleAutoScroll {
+      background: #3498db;
+    }
+
+    #btnClearLog {
+      background: #e74c3c;
+    }
+
+    #btnClose {
+      background: #95a5a6;
+    }
+
+    #deviceLogBody {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #realtimeLogHeader {
+      padding: 10px 15px;
+      background: #2c3e50;
+      color: white;
+      font-size: 12px;
+      border-bottom: 2px solid #e74c3c;
+    }
+
+    #realtimeLogCount {
+      margin-left: 10px;
+      color: #aaa;
+    }
+
+    #realtimeLogContent {
+      height: 250px;
+      overflow-y: auto;
+      padding: 10px;
+      background: #1a1a1a;
+      font-family: monospace;
+      font-size: 11px;
+      color: white;
+    }
+
+    #fileLogHeader {
+      padding: 10px 15px;
+      background: #34495e;
+      color: white;
+      font-size: 12px;
+      border-top: 2px solid #27ae60;
+    }
+
+    #fileLogSubtitle {
+      margin-left: 10px;
+      color: #aaa;
+      font-size: 11px;
+    }
+
+    #deviceLogContent {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      background: #1a1a1a;
+      font-family: monospace;
+      font-size: 11px;
+      color: white;
+      min-height: 200px;
+    }
+
+    .log-entry {
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-bottom: 2px;
+      padding: 1px 0;
+    }
+
+    .log-info {
+      color: #4caf50;
+    }
+
+    .log-warn {
+      color: #ff9800;
+    }
+
+    .log-error {
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div id="deviceLogHeader">
+    <div>
+      <span id="deviceLogTitle">设备日志</span>
+      <span id="deviceLogCount"></span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button id="btnOpenLogFile">日志文件</button>
+      <button id="btnToggleAutoScroll">自动滚动: 开</button>
+      <button id="btnClearLog">清空</button>
+      <button id="btnClose">关闭</button>
+    </div>
+  </div>
+
+  <div id="deviceLogBody">
+    <div id="realtimeLogHeader">
+      <span style="font-weight:bold;">● 实时日志</span>
+      <span id="realtimeLogCount"></span>
+    </div>
+    <div id="realtimeLogContent">
+      <div style="color:#888;padding:20px;text-align:center;">实时日志等待中...</div>
+    </div>
+
+    <div id="fileLogHeader">
+      <span style="font-weight:bold;">📁 日志文件内容</span>
+      <span id="fileLogSubtitle">(点击"日志文件"按钮刷新)</span>
+    </div>
+    <div id="deviceLogContent">
+      <div style="color:#888;padding:20px;text-align:center;">暂无日志记录</div>
+    </div>
+  </div>
+
+  <script>
+    let currentDeviceId = null;
+    let autoScrollEnabled = true;
+    let logContentElement = null;
+    let realtimeLogElement = null;
+    let deviceLogCountElement = null;
+    let realtimeLogCountElement = null;
+
+    function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      currentDeviceId = urlParams.get('deviceId');
+
+      logContentElement = document.getElementById('deviceLogContent');
+      realtimeLogElement = document.getElementById('realtimeLogContent');
+      deviceLogCountElement = document.getElementById('deviceLogCount');
+      realtimeLogCountElement = document.getElementById('realtimeLogCount');
+
+      if (currentDeviceId) {
+        document.getElementById('deviceLogTitle').textContent = '设备日志 - ' + currentDeviceId;
+        document.title = '设备日志 - ' + currentDeviceId;
+      }
+
+      document.getElementById('btnOpenLogFile').addEventListener('click', openDeviceLogFile);
+      document.getElementById('btnToggleAutoScroll').addEventListener('click', toggleLogAutoScroll);
+      document.getElementById('btnClearLog').addEventListener('click', clearCurrentDeviceLog);
+      document.getElementById('btnClose').addEventListener('click', () => window.close());
+    }
+
+    function openDeviceLogFile() {
+      if (window.opener && window.opener.openDeviceLogFile) {
+        window.opener.openDeviceLogFile();
+      }
+    }
+
+    function toggleLogAutoScroll() {
+      autoScrollEnabled = !autoScrollEnabled;
+      document.getElementById('btnToggleAutoScroll').textContent = '自动滚动: ' + (autoScrollEnabled ? '开' : '关');
+    }
+
+    function clearCurrentDeviceLog() {
+      if (window.opener && window.opener.clearCurrentDeviceLog) {
+        window.opener.clearCurrentDeviceLog();
+      }
+      logContentElement.innerHTML = '<div style="color:#888;padding:20px;text-align:center;">暂无日志记录</div>';
+      realtimeLogElement.innerHTML = '<div style="color:#888;padding:20px;text-align:center;">实时日志等待中...</div>';
+      updateLogCounts();
+    }
+
+    function updateLogDisplay(deviceId) {
+      if (deviceId !== currentDeviceId) return;
+      if (window.opener && window.opener.updateLogDisplayForDevice) {
+        window.opener.updateLogDisplayForDevice(deviceId, logContentElement, realtimeLogElement, (count1, count2) => {
+          if (deviceLogCountElement) deviceLogCountElement.textContent = '共 ' + count1 + ' 条';
+          if (realtimeLogCountElement) realtimeLogCountElement.textContent = '共 ' + count2 + ' 条';
+        });
+      }
+    }
+
+    function updateRealtimeLogPanel(deviceId) {
+      if (deviceId !== currentDeviceId) return;
+      if (window.opener && window.opener.updateRealtimeLogPanelForDevice) {
+        window.opener.updateRealtimeLogPanelForDevice(deviceId, realtimeLogElement, (count) => {
+          if (realtimeLogCountElement) realtimeLogCountElement.textContent = '共 ' + count + ' 条';
+        });
+      }
+    }
+
+    function renderLogFileContent(content) {
+      if (logContentElement) {
+        const lines = content.split('\n');
+        let html = '';
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].trim()) {
+            let className = 'log-entry';
+            if (lines[i].includes('[ERROR]')) className += ' log-error';
+            else if (lines[i].includes('[WARN]')) className += ' log-warn';
+            else if (lines[i].includes('[INFO]')) className += ' log-info';
+            html += '<div class="' + className + '">' + escapeHtml(lines[i]) + '</div>';
+          }
+        }
+        logContentElement.innerHTML = html;
+        if (autoScrollEnabled) logContentElement.scrollTop = logContentElement.scrollHeight;
+      }
+    }
+
+    function escapeHtml(text) {
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        }
+
+        function renderLogFileContent(logContent) {
+          const logContentEl = document.getElementById('deviceLogContent');
+          if (!logContentEl) return;
+
+          let html = '';
+          if (logContent && logContent.length > 0) {
+            const lines = logContent.split('\n').filter(function(line) { return line.trim() !== ''; });
+            if (lines.length > 0) {
+              html += '<div style="color:#aaa;padding:10px;border-bottom:1px solid #444;">【控制台日志 - ' + lines.length + ' 条】</div>';
+              lines.forEach(function(line) {
+                let color = '#00ff00';
+                if (line.indexOf('[ERR]') !== -1 || line.indexOf('ERROR') !== -1 || line.indexOf('错误') !== -1 || line.indexOf('失败') !== -1) {
+                  color = '#ff4444';
+                } else if (line.indexOf('[WRN]') !== -1 || line.indexOf('WARN') !== -1 || line.indexOf('警告') !== -1) {
+                  color = '#ffaa00';
+                } else if (line.indexOf('DEBUG') !== -1) {
+                  color = '#3498db';
+                }
+                html += '<div style="margin:2px 0;padding:2px 5px;line-height:1.4;white-space:pre-wrap;word-break:break-all;"><span style="color:' + color + ';">' + escapeHtml(line) + '</span></div>';
+              });
+            }
+          } else {
+            html += '<div style="color:#888;">未找到控制台日志</div>';
+          }
+          logContentEl.innerHTML = html;
+          logContentEl.scrollTop = logContentEl.scrollHeight;
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+      </script>
+</body>
+</html>

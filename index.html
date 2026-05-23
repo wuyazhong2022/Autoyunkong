@@ -1171,42 +1171,7 @@
     </div>
   </div>
 
-  <!-- 设备日志模态框 -->
-  <div id="deviceLogModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10001;justify-content:center;align-items:center;">
-    <div id="deviceLogWindow" style="background:white;border-radius:10px;width:95%;max-width:1000px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;position:absolute;">
-      <div id="deviceLogHeader" style="padding:15px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;background:#f8f9fa;cursor:move;">
-        <div>
-          <span id="deviceLogTitle" style="font-size:16px;font-weight:bold;">设备日志</span>
-          <span id="deviceLogCount" style="font-size:12px;color:#666;margin-left:10px;"></span>
-        </div>
-        <div style="display:flex;gap:10px;">
-          <button onclick="openDeviceLogFile()" style="padding:6px 12px;background:#27ae60;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">日志文件</button>
-          <button id="toggleAutoScroll" onclick="toggleLogAutoScroll()" style="padding:6px 12px;background:#3498db;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">自动滚动: 开</button>
-          <button onclick="clearCurrentDeviceLog()" style="padding:6px 12px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">清空</button>
-          <button id="minimizeDeviceLog" onclick="toggleMinimizeDeviceLog()" style="padding:6px 12px;background:#f39c12;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">-</button>
-          <button onclick="closeDeviceLogModal()" style="padding:6px 12px;background:#95a5a6;color:white;border:none;border-radius:4px;cursor:pointer;">×</button>
-        </div>
-      </div>
-      <!-- 实时日志区域 -->
-      <div id="deviceLogBody" style="display:flex;flex-direction:column;">
-        <div style="padding:10px 15px;background:#2c3e50;color:#fff;font-size:12px;border-bottom:2px solid #e74c3c;">
-          <span style="font-weight:bold;">● 实时日志</span>
-          <span id="realtimeLogCount" style="margin-left:10px;color:#aaa;"></span>
-        </div>
-        <div id="realtimeLogContent" style="height:250px;overflow-y:auto;padding:10px;background:#1a1a1a;font-family:monospace;font-size:11px;color:#fff;">
-          <div style="color:#888;padding:20px;text-align:center;">实时日志等待中...</div>
-        </div>
-        <!-- 日志文件内容区域 -->
-        <div style="padding:10px 15px;background:#34495e;color:#fff;font-size:12px;border-top:2px solid #27ae60;">
-          <span style="font-weight:bold;">📁 日志文件内容</span>
-          <span style="margin-left:10px;color:#aaa;font-size:11px;">(点击"日志文件"按钮刷新)</span>
-        </div>
-        <div id="deviceLogContent" style="flex:1;overflow-y:auto;padding:15px;background:#1a1a1a;font-family:monospace;font-size:11px;color:#fff;min-height:200px;">
-          <div style="color:#888;padding:20px;text-align:center;">暂无日志记录</div>
-        </div>
-      </div>
-    </div>
-  </div>
+
 
   <!-- 设备右键菜单 -->
   <div id="gcDeviceContextMenu" class="gc-context-menu">

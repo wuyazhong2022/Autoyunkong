@@ -160,47 +160,109 @@ function gcRemoteActionSingle(deviceId, type, value) {
   }
 }
 
+// 存储日志窗口的引用
+let logWindow = null;
+
 // 打开设备日志
 function openDeviceLog(deviceId) {
   console.log('[日志] 尝试打开设备日志:', deviceId);
   
-  // 确保DOM就绪
-  function showLogModal() {
-    currentLogDeviceId = deviceId;
-    const modal = document.getElementById('deviceLogModal');
-    const title = document.getElementById('deviceLogTitle');
-    
-    if (!modal) {
-      console.error('[日志] 模态框元素未找到');
-      console.log('日志功能暂不可用');
-      return;
-    }
-    
-    if (title) {
-      title.textContent = '设备日志 - ' + deviceId;
-    }
-    
-    // 更新实时日志面板
-    if (typeof updateRealtimeLogPanel === 'function') {
-      updateRealtimeLogPanel(deviceId);
-    }
-    
-    // 更新日志显示
+  // 如果窗口已经打开，关闭它
+  if (logWindow && !logWindow.closed) {
+    logWindow.close();
+  }
+  
+  // 打开新窗口
+  logWindow = window.open(
+    'device-log.html?deviceId=' + encodeURIComponent(deviceId),
+    'deviceLog',
+    'width=1000,height=800,location=no,menubar=no,toolbar=no,scrollbars=yes,resizable=yes'
+  );
+  
+  currentLogDeviceId = deviceId;
+  
+  // 等待窗口加载完成
+  logWindow.onload = function() {
+    // 初始化日志显示
     if (typeof updateLogDisplay === 'function') {
       updateLogDisplay(deviceId);
     }
-    
-    modal.style.display = 'flex';
+    if (typeof updateRealtimeLogPanel === 'function') {
+      updateRealtimeLogPanel(deviceId);
+    }
     console.log('[日志] 日志窗口已打开, 设备:', deviceId);
+  };
+}
+
+// 为新窗口提供的辅助函数
+window.updateLogDisplayForDevice = function(deviceId, logContentEl, realtimeLogEl, callback) {
+  if (deviceId !== currentLogDeviceId) return;
+  
+  const logs = deviceLogs[deviceId] || [];
+  
+  if (logs.length === 0) {
+    logContentEl.innerHTML = '<div style="color:#888;padding:20px;text-align:center;">暂无日志记录</div>';
+  } else {
+    let html = '';
+    logs.forEach(function(log) {
+      let className = 'log-entry';
+      if (log.level === 'error') className += ' log-error';
+      else if (log.level === 'warn') className += ' log-warn';
+      else className += ' log-info';
+      
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      html += '<div class="' + className + '">' + escapeHtml(time + ' - ' + log.msg) + '</div>';
+    });
+    logContentEl.innerHTML = html;
+    logContentEl.scrollTop = logContentEl.scrollHeight;
   }
   
-  // 如果DOM还没准备好，延迟执行
-  if (!document.getElementById('deviceLogModal')) {
-    setTimeout(showLogModal, 100);
+  callback && callback(logs.length, (realtimeLogs[deviceId] || []).length);
+};
+
+window.updateRealtimeLogPanelForDevice = function(deviceId, realtimeLogEl, callback) {
+  if (deviceId !== currentLogDeviceId) return;
+  
+  const logs = realtimeLogs[deviceId] || [];
+  
+  if (logs.length === 0) {
+    realtimeLogEl.innerHTML = '<div style="color:#888;padding:20px;text-align:center;">实时日志等待中...</div>';
   } else {
-    showLogModal();
+    let html = '';
+    logs.forEach(function(log) {
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      const color = log.source === 'appLog' ? '#8bc34a' : '#03a9f4';
+      const sourceTag = log.source === 'appLog' ? '[APP]' : '[CON]';
+      html += '<div style="margin:2px 0;padding:2px 5px;line-height:1.4;" class="log-entry">';
+      html += '<span style="color:#666;">' + sourceTag + time + '</span> ';
+      html += '<span style="color:' + color + ';">' + escapeHtml(log.msg) + '</span>';
+      html += '</div>';
+    });
+    realtimeLogEl.innerHTML = html;
+    realtimeLogEl.scrollTop = realtimeLogEl.scrollHeight;
   }
-}
+  
+  callback && callback(logs.length);
+};
+
+// 重写更新日志显示函数，同时更新新窗口
+const originalUpdateLogDisplay = updateLogDisplay;
+updateLogDisplay = function(deviceId) {
+  if (logWindow && !logWindow.closed && logWindow.updateLogDisplay) {
+    logWindow.updateLogDisplay(deviceId);
+  } else {
+    originalUpdateLogDisplay(deviceId);
+  }
+};
+
+const originalUpdateRealtimeLogPanel = updateRealtimeLogPanel;
+updateRealtimeLogPanel = function(deviceId) {
+  if (logWindow && !logWindow.closed && logWindow.updateRealtimeLogPanel) {
+    logWindow.updateRealtimeLogPanel(deviceId);
+  } else {
+    originalUpdateRealtimeLogPanel(deviceId);
+  }
+};
 
 // 开始布局分析
 function startLayoutAnalysis(deviceId) {
