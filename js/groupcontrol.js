@@ -162,30 +162,49 @@ function gcRemoteActionSingle(deviceId, type, value) {
 
 // 注意：日志功能已移到 websocket.js 中，通过 openDeviceLog 调用
 
-// 开始布局分析
+// 布局分析窗口
+let layoutWindow = null;
+
+// 开始布局分析 - 在新窗口中打开
 function startLayoutAnalysis(deviceId) {
   console.log('设备 ' + deviceId + ' 布局分析开始...');
   
-  // 发送获取布局指令到设备
-  fetch('/api/task', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      username: currentUser, 
-      targetDevices: [deviceId], 
-      task: { action: 'getLayout' }
-    })
-  }).then(r => r.json()).then(d => {
-    console.log('布局分析请求已发送:', d.msg || '');
-  }).catch(e => {
-    console.error('布局分析请求失败:', e);
-  });
+  // 如果窗口已打开，先关闭
+  if (layoutWindow && !layoutWindow.closed) {
+    layoutWindow.close();
+  }
+  
+  // 打开新窗口
+  layoutWindow = window.open(
+    'layout-analysis.html?deviceId=' + encodeURIComponent(deviceId),
+    'layoutAnalysis',
+    'width=900,height=700,location=no,menubar=no,toolbar=no,scrollbars=yes,resizable=yes'
+  );
+  
+  if (!layoutWindow) {
+    alert('无法打开新窗口，请检查浏览器设置允许弹出窗口');
+  }
 }
 
-// 显示布局报告（可扩展）
+// 显示布局报告 - 在新窗口中打开
 function showLayoutReport(deviceId) {
-  console.log('设备 ' + deviceId + ' 布局报告功能开发中...');
-  // TODO: 实现布局报告功能
+  console.log('设备 ' + deviceId + ' 布局报告开始...');
+  
+  // 如果窗口已打开，先关闭
+  if (layoutWindow && !layoutWindow.closed) {
+    layoutWindow.close();
+  }
+  
+  // 打开新窗口（布局报告也使用同一个页面）
+  layoutWindow = window.open(
+    'layout-analysis.html?deviceId=' + encodeURIComponent(deviceId),
+    'layoutAnalysis',
+    'width=900,height=700,location=no,menubar=no,toolbar=no,scrollbars=yes,resizable=yes'
+  );
+  
+  if (!layoutWindow) {
+    alert('无法打开新窗口，请检查浏览器设置允许弹出窗口');
+  }
 }
 
 // 进入群控投屏时加载数据
