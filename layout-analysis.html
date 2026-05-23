@@ -230,9 +230,10 @@
       
       ws.onopen = function() {
         console.log('[布局分析] WebSocket 已连接');
-        // 发送认证
+        // 发送登录认证
         ws.send(JSON.stringify({ 
-          action: 'auth', 
+          action: 'login', 
+          role: 'web',
           username: localStorage.getItem('currentUser') || 'admin' 
         }));
       };
