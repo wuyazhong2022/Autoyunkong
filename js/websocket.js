@@ -1399,76 +1399,74 @@ function openDeviceLogFile(deviceId) {
 
   isLoadingLogFile = true;
 
-  // 检查是否在新窗口中
-  if (window.logWindow && !window.logWindow.closed) {
-    // 在新窗口中显示加载状态
-    const logContentEl = window.logWindow.document.getElementById('deviceLogContent');
-    if (logContentEl) {
-      logContentEl.innerHTML = '<div style="color:#888;padding:50px;text-align:center;">正在请求设备日志文件...</div>';
-    }
-  } else {
-    // 否则打开新窗口显示日志
-    logFileWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
-    if (!logFileWindow) {
-      alert('无法打开新窗口，请检查浏览器设置允许弹出窗口');
-      isLoadingLogFile = false;
-      return;
-    }
-
-    // 在新窗口中显示加载状态
-    logFileWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>设备日志 - ${targetDeviceId}</title>
-        <style>
-          body { background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; margin: 0; padding: 10px; }
-          .loading { color: #888; text-align: center; padding: 50px; }
-          .log-line { margin: 2px 0; padding: 2px 5px; white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
-          .section-title { color: #888; padding: 10px 5px 5px; border-bottom: 1px solid #444; margin-top: 15px; font-weight: bold; }
-          .header { position: sticky; top: 0; background: #2d2d2d; padding: 10px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
-          .header button { padding: 6px 12px; cursor: pointer; border: none; border-radius: 4px; font-size: 12px; }
-          .btn-copy { background: #27ae60; color: white; }
-          .btn-save { background: #3498db; color: white; margin-left: 5px; }
-          .btn-clear { background: #e74c3c; color: white; margin-left: 5px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <span>设备日志 - ${targetDeviceId}</span>
-          <div>
-            <button class="btn-copy" onclick="copyLog()">复制</button>
-            <button class="btn-save" onclick="saveLog()">保存</button>
-            <button class="btn-clear" onclick="clearLog()">清空</button>
-          </div>
-        </div>
-        <div id="logContent"><div class="loading">正在请求设备日志文件...</div></div>
-        <script>
-          var logData = '';
-          function copyLog() {
-            navigator.clipboard.writeText(document.getElementById('logContent').innerText).then(() => alert('已复制到剪贴板'));
-          }
-          function saveLog() {
-            var blob = new Blob([document.getElementById('logContent').innerText], {type: 'text/plain'});
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'device_log_' + new Date().toISOString().slice(0,10) + '.txt';
-            a.click();
-          }
-          function clearLog() {
-            document.getElementById('logContent').innerHTML = '';
-          }
-          function scrollToBottom() {
-            var el = document.getElementById('logContent');
-            if (el) el.scrollTop = el.scrollHeight;
-          }
-        </script>
-      </body>
-      </html>
-    `);
-    logFileWindow.document.close();
+  // 关闭之前的日志文件窗口
+  if (logFileWindow && !logFileWindow.closed) {
+    logFileWindow.close();
   }
+
+  // 始终在新窗口中打开日志文件
+  logFileWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+  if (!logFileWindow) {
+    alert('无法打开新窗口，请检查浏览器设置允许弹出窗口');
+    isLoadingLogFile = false;
+    return;
+  }
+
+  // 在新窗口中显示加载状态
+  logFileWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>日志文件 - ${targetDeviceId}</title>
+      <style>
+        body { background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; margin: 0; padding: 10px; }
+        .loading { color: #888; text-align: center; padding: 50px; }
+        .log-line { margin: 2px 0; padding: 2px 5px; white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
+        .section-title { color: #888; padding: 10px 5px 5px; border-bottom: 1px solid #444; margin-top: 15px; font-weight: bold; }
+        .header { position: sticky; top: 0; background: #2d2d2d; padding: 10px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
+        .header button { padding: 6px 12px; cursor: pointer; border: none; border-radius: 4px; font-size: 12px; }
+        .btn-refresh { background: #27ae60; color: white; }
+        .btn-copy { background: #3498db; color: white; margin-left: 5px; }
+        .btn-save { background: #9b59b6; color: white; margin-left: 5px; }
+        .btn-clear { background: #e74c3c; color: white; margin-left: 5px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <span>日志文件 - ${targetDeviceId}</span>
+        <div>
+          <button class="btn-refresh" onclick="window.opener.openDeviceLogFile('${targetDeviceId}')">刷新</button>
+          <button class="btn-copy" onclick="copyLog()">复制</button>
+          <button class="btn-save" onclick="saveLog()">保存</button>
+          <button class="btn-clear" onclick="clearLog()">清空</button>
+        </div>
+      </div>
+      <div id="logContent"><div class="loading">正在请求设备日志文件...</div></div>
+      <script>
+        var logData = '';
+        function copyLog() {
+          navigator.clipboard.writeText(document.getElementById('logContent').innerText).then(() => alert('已复制到剪贴板'));
+        }
+        function saveLog() {
+          var blob = new Blob([document.getElementById('logContent').innerText], {type: 'text/plain'});
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'device_log_' + new Date().toISOString().slice(0,10) + '.txt';
+          a.click();
+        }
+        function clearLog() {
+          document.getElementById('logContent').innerHTML = '';
+        }
+        function scrollToBottom() {
+          var el = document.getElementById('logContent');
+          if (el) el.scrollTop = el.scrollHeight;
+        }
+      </script>
+    </body>
+    </html>
+  `);
+  logFileWindow.document.close();
 
   // 发送请求到设备
   webWs.send(JSON.stringify({
