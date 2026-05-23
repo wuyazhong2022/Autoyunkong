@@ -1838,3 +1838,20 @@ const originalOpenDeviceLogFile = openDeviceLogFile;
 window.openDeviceLogFile = function() {
   originalOpenDeviceLogFile();
 };
+
+// 监听来自子窗口的消息
+window.addEventListener('message', function(event) {
+  const msg = event.data;
+  if (msg && msg.type === 'openLogFile') {
+    // 从主界面打开日志文件窗口
+    if (logFileWindow && !logFileWindow.closed) {
+      logFileWindow.close();
+    }
+    
+    logFileWindow = window.open(
+      'log-file.html?deviceId=' + encodeURIComponent(msg.deviceId),
+      'logFile',
+      'width=900,height=700,location=no,menubar=no,toolbar=no,scrollbars=yes,resizable=yes'
+    );
+  }
+});

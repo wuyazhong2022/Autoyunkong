@@ -208,23 +208,20 @@
       });
     }
 
-    let logFileWindow = null;
-
     function openDeviceLogFile() {
-      // 如果窗口已打开，先关闭
-      if (logFileWindow && !logFileWindow.closed) {
-        logFileWindow.close();
-      }
-      
-      // 打开新窗口
-      logFileWindow = window.open(
-        'log-file.html?deviceId=' + encodeURIComponent(currentDeviceId),
-        'logFile',
-        'width=900,height=700,location=no,menubar=no,toolbar=no,scrollbars=yes,resizable=yes'
-      );
-      
-      if (!logFileWindow) {
-        alert('无法打开新窗口，请检查浏览器设置允许弹出窗口');
+      // 通过 postMessage 通知父窗口打开日志文件
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'openLogFile',
+          deviceId: currentDeviceId
+        }, '*');
+      } else {
+        // 如果没有父窗口，尝试直接调用
+        if (typeof openDeviceLogFile === 'function') {
+          openDeviceLogFile();
+        } else {
+          alert('无法打开日志文件，请从主界面操作');
+        }
       }
     }
 
