@@ -241,6 +241,7 @@
       ws.onmessage = function(event) {
         try {
           const msg = JSON.parse(event.data);
+          console.log('[布局分析] 收到消息:', JSON.stringify(msg));
           handleMessage(msg);
         } catch(e) {
           console.error('[布局分析] 解析消息失败:', e);
@@ -260,10 +261,12 @@
     var isAuthenticated = false;
     
     function handleMessage(msg) {
+      console.log('[布局分析] handleMessage 被调用, msg.action:', msg.action, 'msg.status:', msg.status);
+      
       // 处理登录成功消息（兼容 webLoginAck 和 login 两种响应）
       if ((msg.action === 'login' || msg.action === 'webLoginAck') && msg.status === 'success') {
         isAuthenticated = true;
-        console.log('[布局分析] 登录成功');
+        console.log('[布局分析] 登录成功，设置 isAuthenticated = true');
         // 登录成功后自动请求布局数据
         refreshLayout();
         return;
