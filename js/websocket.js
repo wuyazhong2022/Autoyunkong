@@ -773,17 +773,41 @@ function handleLayoutData(deviceId, deviceName, layout, error) {
   
   if (error) {
     console.error('[布局] 获取布局失败:', error);
+    // 转发错误给布局分析窗口
+    if (layoutWindow && !layoutWindow.closed) {
+      layoutWindow.postMessage({
+        type: 'error',
+        message: '获取布局失败: ' + error
+      }, '*');
+    }
     alert('获取布局失败: ' + error);
     return;
   }
   
   if (!layout) {
     console.error('[布局] 布局数据为空');
+    // 转发错误给布局分析窗口
+    if (layoutWindow && !layoutWindow.closed) {
+      layoutWindow.postMessage({
+        type: 'error',
+        message: '布局数据为空'
+      }, '*');
+    }
     alert('布局数据为空');
     return;
   }
   
-  // 打开布局显示窗口
+  // 转发布局数据给布局分析窗口
+  if (layoutWindow && !layoutWindow.closed) {
+    console.log('[布局] 转发布局数据给布局分析窗口');
+    layoutWindow.postMessage({
+      type: 'layoutData',
+      deviceId: deviceId,
+      layout: layout
+    }, '*');
+  }
+  
+  // 打开布局显示窗口（保持原有功能）
   showLayoutModal(deviceId, deviceName, layout);
 }
 
@@ -1845,5 +1869,31 @@ window.addEventListener('message', function(event) {
   if (msg && msg.type === 'openLogFile') {
     // 调用原始函数打开日志文件，传入设备ID
     openDeviceLogFile(msg.deviceId);
+  }
+  
+  if (msg && msg.type === 'requestLayout') {
+    // 处理布局分析请求
+    console.log('[WebSocket] 收到布局分析请求, deviceId:', msg.deviceId);
+    webWs.send(JSON.stringify({
+      action: 'sendToDevice',
+      targetDevice: msg.deviceId,
+      content: JSON.stringify({ action: 'getLayout' })
+    }));
+    
+    // 监听布局数据响应，转发给布局分析窗口
+    const handleLayoutResponse = function(layoutMsg) {
+      if (layoutMsg.action === 'layoutData' && layoutMsg.deviceId === msg.deviceId) {
+        console.log('[WebSocket] 收到布局数据，转发给布局分析窗口');
+        if (layoutWindow && !layoutWindow.closed) {
+          layoutWindow.postMessage({
+            type: 'layoutData',
+            deviceId: msg.deviceId,
+            layout: layoutMsg.layout
+          }, '*');
+        }
+      }
+    };
+    
+    // 不需要一次性监听器，因为我们已经有 handleMessage 处理消息
   }
 });

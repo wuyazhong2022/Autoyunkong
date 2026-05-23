@@ -1073,12 +1073,19 @@ app.ws.use(route.all('/', function (ctx) {
             if (msg.action === 'login' && msg.role === 'web') {
                 const username = msg.username;
                 console.log('[Web登录] 收到Web客户端登录请求, username:', username);
+                console.log('[Web登录] 当前连接状态:', ws.readyState, '(1=OPEN, 0=CONNECTING, 2=CLOSING, 3=CLOSED)');
                 webClients.set(username, ws);
                 console.log('[Web登录] 已注册到 webClients, 当前客户端数:', webClients.size);
                 const response = JSON.stringify({ action: 'webLoginAck', status: 'success' });
                 console.log('[Web登录] 准备发送响应:', response);
-                ws.send(response);
-                console.log('[Web登录] 响应已发送');
+                
+                // 检查连接状态
+                if (ws.readyState !== 1) {
+                    console.log('[Web登录] 警告: 连接未打开，无法发送响应');
+                } else {
+                    ws.send(response);
+                    console.log('[Web登录] 响应已发送');
+                }
                 return;
             }
 
