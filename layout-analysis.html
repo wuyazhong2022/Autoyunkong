@@ -99,6 +99,7 @@
       padding: 10px;
       overflow: auto;
       background: white;
+      height: calc(100vh - 120px);
     }
     .json-panel pre {
       margin: 0;
@@ -253,13 +254,14 @@
       document.getElementById('layoutContent').innerHTML = html;
       
       // 初始显示提示信息
-      document.getElementById('layoutJson').innerHTML = `
-        <div style="padding: 20px; text-align: center; color: #999;">
-          <div style="font-size: 48px; margin-bottom: 15px;">👆</div>
-          <p style="font-size: 14px;">点击左侧树形结构中的节点</p>
-          <p style="font-size: 12px; margin-top: 5px;">查看节点详细信息</p>
-        </div>
-      `;
+      document.getElementById('layoutJson').textContent = '// 点击左侧树形结构中的节点查看详情';
+      
+      // 设置右侧面板高度，确保独立滚动
+      const jsonPanel = document.querySelector('.json-panel');
+      if (jsonPanel) {
+        jsonPanel.style.height = 'calc(100vh - 120px)';
+        jsonPanel.style.overflow = 'auto';
+      }
       
       // 构建树形结构
       buildLayoutTree(data.hierarchy);
