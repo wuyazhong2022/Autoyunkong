@@ -1381,8 +1381,10 @@ function toggleLogAutoScroll() {
 let isLoadingLogFile = false;
 let logFileWindow = null;
 
-function openDeviceLogFile() {
-  if (!currentLogDeviceId) {
+function openDeviceLogFile(deviceId) {
+  const targetDeviceId = deviceId || currentLogDeviceId;
+  
+  if (!targetDeviceId) {
     alert('请先选择设备');
     return;
   }
@@ -1419,7 +1421,7 @@ function openDeviceLogFile() {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>设备日志 - ${currentLogDeviceId}</title>
+        <title>设备日志 - ${targetDeviceId}</title>
         <style>
           body { background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; margin: 0; padding: 10px; }
           .loading { color: #888; text-align: center; padding: 50px; }
@@ -1434,7 +1436,7 @@ function openDeviceLogFile() {
       </head>
       <body>
         <div class="header">
-          <span>设备日志 - ${currentLogDeviceId}</span>
+          <span>设备日志 - ${targetDeviceId}</span>
           <div>
             <button class="btn-copy" onclick="copyLog()">复制</button>
             <button class="btn-save" onclick="saveLog()">保存</button>
@@ -1471,7 +1473,7 @@ function openDeviceLogFile() {
   // 发送请求到设备
   webWs.send(JSON.stringify({
     action: 'sendToDevice',
-    targetDevice: currentLogDeviceId,
+    targetDevice: targetDeviceId,
     content: JSON.stringify({ action: 'getLogFile' })
   }));
 
@@ -1835,23 +1837,15 @@ window.updateRealtimeLogPanel = function(deviceId) {
 
 // 重写 openDeviceLogFile 函数，支持新窗口
 const originalOpenDeviceLogFile = openDeviceLogFile;
-window.openDeviceLogFile = function() {
-  originalOpenDeviceLogFile();
+window.openDeviceLogFile = function(deviceId) {
+  originalOpenDeviceLogFile(deviceId);
 };
 
 // 监听来自子窗口的消息
 window.addEventListener('message', function(event) {
   const msg = event.data;
   if (msg && msg.type === 'openLogFile') {
-    // 从主界面打开日志文件窗口
-    if (logFileWindow && !logFileWindow.closed) {
-      logFileWindow.close();
-    }
-    
-    logFileWindow = window.open(
-      'log-file.html?deviceId=' + encodeURIComponent(msg.deviceId),
-      'logFile',
-      'width=900,height=700,location=no,menubar=no,toolbar=no,scrollbars=yes,resizable=yes'
-    );
+    // 调用原始函数打开日志文件，传入设备ID
+    openDeviceLogFile(msg.deviceId);
   }
 });
