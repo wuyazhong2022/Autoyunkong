@@ -1211,64 +1211,73 @@ app.ws.use(route.all('/', function (ctx) {
 
             // Web管理端发送消息到设备：Web管理端 → 安卓设备
             if (msg.action === 'sendToDevice' && msg.targetDevice && msg.content) {
-                console.log(`[DEBUG] 收到 sendToDevice 消息: target=${msg.targetDevice}, content=${msg.content}`);
+                console.log(`[sendToDevice] 收到消息: target=${msg.targetDevice}, content=${msg.content}`);
+                console.log(`[sendToDevice] 当前在线设备列表:`, Array.from(devices.keys()));
                 const device = devices.get(msg.targetDevice);
-                console.log(`[DEBUG] 设备查询结果: ${device ? '存在' : '不存在'}`);
-                if (device) {
-                    console.log(`[DEBUG] 设备连接状态: ${device.ws.readyState}`);
-                }
-                if (device && device.ws.readyState === 1) {
-                    const deviceName = device.info.deviceName || msg.targetDevice;
-                    
-                    try {
-                        // 尝试解析content为JSON
-                        const contentObj = JSON.parse(msg.content);
-                        
-                        // 检查是否是按键指令，如果是，直接发送
-                        if (contentObj.action === 'keyCode') {
-                            // 转换为客户端能识别的key格式
-                            const keyMsg = {
-                                action: 'key',
-                                keyCode: contentObj.keyCode,
-                                keyName: contentObj.keyName
-                            };
-                            device.ws.send(JSON.stringify(keyMsg));
-                            console.log(`服务端发送按键指令到设备[${msg.targetDevice}-${deviceName}]: ${contentObj.keyName}(${contentObj.keyCode})`);
-                        } else {
-                            // 普通消息，保持原格式
-                            device.ws.send(JSON.stringify({
-                                action: 'sendMessage',
-                                content: msg.content,
-                                timestamp: new Date().toISOString()
-                            }));
-                            console.log(`服务端发送消息到设备[${msg.targetDevice}-${deviceName}]: ${msg.content}`);
-                        }
-                    } catch (e) {
-                        // 如果不是JSON，作为普通文本发送
-                        device.ws.send(JSON.stringify({
-                            action: 'sendMessage',
-                            content: msg.content,
-                            timestamp: new Date().toISOString()
-                        }));
-                        console.log(`服务端发送文本消息到设备[${msg.targetDevice}-${deviceName}]: ${msg.content}`);
-                    }
-                    
-                    // 发送确认给Web端
-                    ws.send(JSON.stringify({
-                        action: 'messageAck',
-                        status: 'success',
-                        deviceId: msg.targetDevice,
-                        deviceName: deviceName,
-                        msg: '消息已发送到设备'
-                    }));
-                } else {
+                if (!device) {
+                    console.log(`[sendToDevice] 错误: 设备 ${msg.targetDevice} 不存在`);
                     ws.send(JSON.stringify({
                         action: 'messageAck',
                         status: 'error',
                         deviceId: msg.targetDevice,
                         msg: '设备不在线'
                     }));
+                    return;
                 }
+                console.log(`[sendToDevice] 设备存在，连接状态: ${device.ws.readyState}`);
+                if (device.ws.readyState !== 1) {
+                    console.log(`[sendToDevice] 错误: 设备连接状态不是 OPEN (${device.ws.readyState})`);
+                    ws.send(JSON.stringify({
+                        action: 'messageAck',
+                        status: 'error',
+                        deviceId: msg.targetDevice,
+                        msg: '设备连接已断开'
+                    }));
+                    return;
+                }
+                const deviceName = device.info.deviceName || msg.targetDevice;
+                
+                try {
+                    // 尝试解析content为JSON
+                    const contentObj = JSON.parse(msg.content);
+                    
+                    // 检查是否是按键指令，如果是，直接发送
+                    if (contentObj.action === 'keyCode') {
+                        // 转换为客户端能识别的key格式
+                        const keyMsg = {
+                            action: 'key',
+                            keyCode: contentObj.keyCode,
+                            keyName: contentObj.keyName
+                        };
+                        device.ws.send(JSON.stringify(keyMsg));
+                        console.log(`服务端发送按键指令到设备[${msg.targetDevice}-${deviceName}]: ${contentObj.keyName}(${contentObj.keyCode})`);
+                    } else {
+                        // 普通消息，保持原格式
+                        device.ws.send(JSON.stringify({
+                            action: 'sendMessage',
+                            content: msg.content,
+                            timestamp: new Date().toISOString()
+                        }));
+                        console.log(`服务端发送消息到设备[${msg.targetDevice}-${deviceName}]: ${msg.content}`);
+                    }
+                } catch (e) {
+                    // 如果不是JSON，作为普通文本发送
+                    device.ws.send(JSON.stringify({
+                        action: 'sendMessage',
+                        content: msg.content,
+                        timestamp: new Date().toISOString()
+                    }));
+                    console.log(`服务端发送文本消息到设备[${msg.targetDevice}-${deviceName}]: ${msg.content}`);
+                }
+                
+                // 发送确认给Web端
+                ws.send(JSON.stringify({
+                    action: 'messageAck',
+                    status: 'success',
+                    deviceId: msg.targetDevice,
+                    deviceName: deviceName,
+                    msg: '消息已发送到设备'
+                }));
                 return;
             }
 

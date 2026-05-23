@@ -278,23 +278,32 @@
 
     // 请求刷新布局
     function refreshLayout() {
+      console.log('[布局分析] refreshLayout 被调用');
+      console.log('[布局分析] ws状态:', ws ? ws.readyState : 'null');
+      console.log('[布局分析] isAuthenticated:', isAuthenticated);
+      console.log('[布局分析] currentDeviceId:', currentDeviceId);
+      
       if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.log('[布局分析] WebSocket 未连接');
         showToast('WebSocket 未连接', 'error');
         return;
       }
       
       if (!isAuthenticated) {
+        console.log('[布局分析] 未认证，不发送请求');
         showToast('等待认证...', 'warning');
         return;
       }
       
       document.getElementById('layoutContent').innerHTML = '<div class="loading">⏳ 正在获取布局数据...</div>';
       
-      ws.send(JSON.stringify({
+      const requestMsg = {
         action: 'sendToDevice',
         targetDevice: currentDeviceId,
         content: JSON.stringify({ action: 'getLayout' })
-      }));
+      };
+      console.log('[布局分析] 发送消息:', JSON.stringify(requestMsg));
+      ws.send(JSON.stringify(requestMsg));
       
       setTimeout(() => {
         const content = document.getElementById('layoutContent');
