@@ -9,7 +9,7 @@ const MAX_LOCAL_LOGS = 100;
 
 // ==================== 设备日志存储 ====================
 let deviceLogs = {};  // 格式: { deviceId: [{ msg, level, timestamp }] }
-const MAX_DEVICE_LOGS = 200;  // 每个设备最多保存的日志数
+const MAX_DEVICE_LOGS = 1000;  // 每个设备最多保存的日志数
 
 function connectWebWs() {
   if (webWs && webWsConnected) return;

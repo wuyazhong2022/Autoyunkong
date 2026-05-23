@@ -177,9 +177,9 @@ function sendLogFileToServer(w) {
                 let appLogs = files.read(appLogPath);
                 if (appLogs && appLogs.trim().length > 0) {
                     allLogs.push("【应用专属全局日志】");
-                    // 只取最后200行
+                    // 只取最后1000行
                     let lines = appLogs.split("\n");
-                    let recentLines = lines.slice(-200);
+                    let recentLines = lines.slice(-1000);
                     allLogs = allLogs.concat(recentLines.filter(function(l) { return l.trim() !== ""; }));
                     foundSources.push("app_log.txt");
                     log("[getLogFile] 应用专属日志已读取, 内容长度: " + appLogs.length);
