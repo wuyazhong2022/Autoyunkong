@@ -358,21 +358,25 @@
           toggleIcon.title = expanded ? '点击收起' : '点击展开';
         };
         
-        row.onclick = (e) => {
-          e.stopPropagation();
-          expanded = !expanded;
-          toggleIcon.textContent = expanded ? '−' : '+';
-          childrenContainer.style.display = expanded ? 'block' : 'none';
-          toggleIcon.title = expanded ? '点击收起' : '点击展开';
-          // 显示节点详情
-          showNodeDetails(node);
-        };
+        // 使用立即执行函数捕获当前 node 值
+        row.onclick = (function(currentNode) {
+          return function(e) {
+            e.stopPropagation();
+            expanded = !expanded;
+            toggleIcon.textContent = expanded ? '−' : '+';
+            childrenContainer.style.display = expanded ? 'block' : 'none';
+            toggleIcon.title = expanded ? '点击收起' : '点击展开';
+            showNodeDetails(currentNode);
+          };
+        })(node);
       } else {
         // 没有子节点的节点，点击直接显示详情
-        row.onclick = (e) => {
-          e.stopPropagation();
-          showNodeDetails(node);
-        };
+        row.onclick = (function(currentNode) {
+          return function(e) {
+            e.stopPropagation();
+            showNodeDetails(currentNode);
+          };
+        })(node);
       }
       
       container.appendChild(item);
