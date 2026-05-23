@@ -1504,6 +1504,23 @@ function handleLogFileResponse(deviceId, logContent) {
     return;
   }
 
+  // 尝试通过 postMessage 发送给所有打开的窗口
+  const allWindows = [];
+  if (window.logWindow && !window.logWindow.closed) allWindows.push(window.logWindow);
+  if (logFileWindow && !logFileWindow.closed) allWindows.push(logFileWindow);
+  
+  allWindows.forEach(targetWindow => {
+    try {
+      targetWindow.postMessage({
+        type: 'logFile',
+        deviceId: deviceId,
+        content: logContent
+      }, '*');
+    } catch(e) {
+      console.log('发送消息到窗口失败:', e);
+    }
+  });
+
   // 检查是否在新日志窗口中
   if (window.logWindow && !window.logWindow.closed) {
     try {

@@ -198,11 +198,33 @@
       document.getElementById('btnToggleAutoScroll').addEventListener('click', toggleLogAutoScroll);
       document.getElementById('btnClearLog').addEventListener('click', clearCurrentDeviceLog);
       document.getElementById('btnClose').addEventListener('click', () => window.close());
+
+      // 监听 postMessage 从父窗口接收日志
+      window.addEventListener('message', function(event) {
+        const msg = event.data;
+        if (msg && msg.type === 'logFile' && msg.deviceId === currentDeviceId) {
+          renderLogFileContent(msg.content);
+        }
+      });
     }
 
+    let logFileWindow = null;
+
     function openDeviceLogFile() {
-      if (window.opener && window.opener.openDeviceLogFile) {
-        window.opener.openDeviceLogFile();
+      // 如果窗口已打开，先关闭
+      if (logFileWindow && !logFileWindow.closed) {
+        logFileWindow.close();
+      }
+      
+      // 打开新窗口
+      logFileWindow = window.open(
+        'log-file.html?deviceId=' + encodeURIComponent(currentDeviceId),
+        'logFile',
+        'width=900,height=700,location=no,menubar=no,toolbar=no,scrollbars=yes,resizable=yes'
+      );
+      
+      if (!logFileWindow) {
+        alert('无法打开新窗口，请检查浏览器设置允许弹出窗口');
       }
     }
 
@@ -239,59 +261,41 @@
       }
     }
 
-    function renderLogFileContent(content) {
-      if (logContentElement) {
-        const lines = content.split('\n');
-        let html = '';
-        for (let i = 0; i < lines.length; i++) {
-          if (lines[i].trim()) {
-            let className = 'log-entry';
-            if (lines[i].includes('[ERROR]')) className += ' log-error';
-            else if (lines[i].includes('[WARN]')) className += ' log-warn';
-            else if (lines[i].includes('[INFO]')) className += ' log-info';
-            html += '<div class="' + className + '">' + escapeHtml(lines[i]) + '</div>';
-          }
+    function renderLogFileContent(logContent) {
+      const logContentEl = document.getElementById('deviceLogContent');
+      if (!logContentEl) return;
+
+      let html = '';
+      if (logContent && logContent.length > 0) {
+        const lines = logContent.split('\n').filter(function(line) { return line.trim() !== ''; });
+        if (lines.length > 0) {
+          html += '<div style="color:#aaa;padding:10px;border-bottom:1px solid #444;">【控制台日志 - ' + lines.length + ' 条】</div>';
+          lines.forEach(function(line) {
+            let color = '#00ff00';
+            if (line.indexOf('[ERR]') !== -1 || line.indexOf('ERROR') !== -1 || line.indexOf('错误') !== -1 || line.indexOf('失败') !== -1) {
+              color = '#ff4444';
+            } else if (line.indexOf('[WRN]') !== -1 || line.indexOf('WARN') !== -1 || line.indexOf('警告') !== -1) {
+              color = '#ffaa00';
+            } else if (line.indexOf('DEBUG') !== -1) {
+              color = '#3498db';
+            }
+            html += '<div style="margin:2px 0;padding:2px 5px;line-height:1.4;white-space:pre-wrap;word-break:break-all;"><span style="color:' + color + ';">' + escapeHtml(line) + '</span></div>';
+          });
         }
-        logContentElement.innerHTML = html;
-        if (autoScrollEnabled) logContentElement.scrollTop = logContentElement.scrollHeight;
+      } else {
+        html += '<div style="color:#888;">未找到控制台日志</div>';
       }
+      logContentEl.innerHTML = html;
+      logContentEl.scrollTop = logContentEl.scrollHeight;
     }
 
     function escapeHtml(text) {
-          const div = document.createElement('div');
-          div.textContent = text;
-          return div.innerHTML;
-        }
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
-        function renderLogFileContent(logContent) {
-          const logContentEl = document.getElementById('deviceLogContent');
-          if (!logContentEl) return;
-
-          let html = '';
-          if (logContent && logContent.length > 0) {
-            const lines = logContent.split('\n').filter(function(line) { return line.trim() !== ''; });
-            if (lines.length > 0) {
-              html += '<div style="color:#aaa;padding:10px;border-bottom:1px solid #444;">【控制台日志 - ' + lines.length + ' 条】</div>';
-              lines.forEach(function(line) {
-                let color = '#00ff00';
-                if (line.indexOf('[ERR]') !== -1 || line.indexOf('ERROR') !== -1 || line.indexOf('错误') !== -1 || line.indexOf('失败') !== -1) {
-                  color = '#ff4444';
-                } else if (line.indexOf('[WRN]') !== -1 || line.indexOf('WARN') !== -1 || line.indexOf('警告') !== -1) {
-                  color = '#ffaa00';
-                } else if (line.indexOf('DEBUG') !== -1) {
-                  color = '#3498db';
-                }
-                html += '<div style="margin:2px 0;padding:2px 5px;line-height:1.4;white-space:pre-wrap;word-break:break-all;"><span style="color:' + color + ';">' + escapeHtml(line) + '</span></div>';
-              });
-            }
-          } else {
-            html += '<div style="color:#888;">未找到控制台日志</div>';
-          }
-          logContentEl.innerHTML = html;
-          logContentEl.scrollTop = logContentEl.scrollHeight;
-        }
-
-        window.addEventListener('DOMContentLoaded', init);
-      </script>
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
 </html>
