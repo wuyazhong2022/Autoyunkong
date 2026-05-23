@@ -260,8 +260,8 @@
     var isAuthenticated = false;
     
     function handleMessage(msg) {
-      // 处理登录成功消息
-      if (msg.action === 'login' && msg.status === 'success') {
+      // 处理登录成功消息（兼容 webLoginAck 和 login 两种响应）
+      if ((msg.action === 'login' || msg.action === 'webLoginAck') && msg.status === 'success') {
         isAuthenticated = true;
         console.log('[布局分析] 登录成功');
         // 登录成功后自动请求布局数据

@@ -1006,6 +1006,7 @@ app.ws.use(route.all('/', function (ctx) {
     ws.on('message', function (message) {
         try {
             const msg = JSON.parse(message);
+            console.log(`[WS消息] action=${msg.action}, role=${msg.role || 'none'}, deviceId=${msg.deviceId || 'none'}`);
 
             // 处理登录请求（安卓设备）
             if (msg.action === 'login' && !msg.role) {
@@ -1210,7 +1211,12 @@ app.ws.use(route.all('/', function (ctx) {
 
             // Web管理端发送消息到设备：Web管理端 → 安卓设备
             if (msg.action === 'sendToDevice' && msg.targetDevice && msg.content) {
+                console.log(`[DEBUG] 收到 sendToDevice 消息: target=${msg.targetDevice}, content=${msg.content}`);
                 const device = devices.get(msg.targetDevice);
+                console.log(`[DEBUG] 设备查询结果: ${device ? '存在' : '不存在'}`);
+                if (device) {
+                    console.log(`[DEBUG] 设备连接状态: ${device.ws.readyState}`);
+                }
                 if (device && device.ws.readyState === 1) {
                     const deviceName = device.info.deviceName || msg.targetDevice;
                     
