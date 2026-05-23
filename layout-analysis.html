@@ -393,61 +393,11 @@
       };
     }
     
-    // 显示节点详情
+    // 显示节点详情（直接显示JSON，与主页面一致）
     function showNodeDetails(node) {
       const jsonPanel = document.getElementById('layoutJson');
       if (!jsonPanel || !node) return;
-      
-      // 构建详细信息表格
-      let html = `
-        <div style="padding: 10px;">
-          <h3 style="margin-bottom: 15px; color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 5px;">📋 节点详情</h3>
-          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-      `;
-      
-      const fields = [
-        { label: '类名', value: node.className, highlight: true },
-        { label: '包名', value: node.packageName },
-        { label: '文本', value: node.text, highlight: true },
-        { label: '描述', value: node.desc },
-        { label: 'ID', value: node.id, highlight: true },
-        { label: '深度', value: node.depth },
-        { label: '父级索引', value: node.indexInParent },
-        { label: '子节点数', value: node.childCount },
-        { label: '点击区域', value: node.boundsInScreen ? formatBounds(node.boundsInScreen) : null },
-        { label: '可点击', value: node.clickable ? '是' : '否', bool: node.clickable },
-        { label: '可长按', value: node.longClickable ? '是' : '否', bool: node.longClickable },
-        { label: '可滚动', value: node.scrollable ? '是' : '否', bool: node.scrollable },
-        { label: '可用', value: node.enabled ? '是' : '否', bool: node.enabled },
-        { label: '可勾选', value: node.checkable ? '是' : '否', bool: node.checkable },
-        { label: '已勾选', value: node.checked ? '是' : '否', bool: node.checked },
-        { label: '可见', value: node.visibleToUser ? '是' : '否', bool: node.visibleToUser },
-      ];
-      
-      fields.forEach(field => {
-        if (field.value !== undefined && field.value !== null && field.value !== '') {
-          const valueClass = field.bool 
-            ? (field.bool ? 'color: #27ae60; font-weight: bold;' : 'color: #999;')
-            : (field.highlight ? 'color: #e74c3c; font-weight: bold;' : '');
-          html += `
-            <tr>
-              <td style="padding: 6px 10px; text-align: right; background: #f8f9fa; width: 100px; border-bottom: 1px solid #eee;">${field.label}</td>
-              <td style="padding: 6px 10px; border-bottom: 1px solid #eee; ${valueClass}">${escapeHtml(String(field.value))}</td>
-            </tr>
-          `;
-        }
-      });
-      
-      html += `
-          </table>
-          <div style="margin-top: 15px; padding: 10px; background: #e8f4f8; border-radius: 5px;">
-            <h4 style="margin-bottom: 8px; color: #2980b9;">📄 JSON 数据</h4>
-            <pre style="font-size: 10px; max-height: 200px; overflow-y: auto; margin: 0;">${JSON.stringify(node, null, 2)}</pre>
-          </div>
-        </div>
-      `;
-      
-      jsonPanel.innerHTML = html;
+      jsonPanel.textContent = JSON.stringify(node, null, 2);
     }
     
     // 格式化边界信息
