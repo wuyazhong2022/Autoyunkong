@@ -158,9 +158,8 @@
   </div>
 
   <div class="toolbar">
-    <input id="layoutSearch" type="text" placeholder="🔍 搜索 className/text/id/desc..." 
-      style="width: 300px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;"
-      oninput="searchLayoutTree(this.value)">
+    <input id="layoutSearch" type="text" placeholder="🔍 搜索 className/text/id/desc..." style="width: 280px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;" oninput="searchLayoutTree(this.value)">
+    <button id="btnNextMatch" onclick="goToNextMatch()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;" title="下一个匹配">⬇️ 下一个</button>
     <span id="layoutSearchCount" style="margin-left: 10px; font-size: 12px; color: #666;"></span>
     <div style="flex: 1;"></div>
     <button onclick="refreshLayout()">🔄 刷新</button>
@@ -175,6 +174,8 @@
   <script>
     let currentDeviceId = '';
     let layoutData = null;
+    let currentMatchIndex = 0;
+    let matchElements = [];
 
     // 从 URL 获取设备 ID
     const urlParams = new URLSearchParams(window.location.search);
@@ -375,44 +376,73 @@
           el.classList.remove('search-highlight');
           el.style.background = '';
         });
+        matchElements = [];
+        currentMatchIndex = 0;
         return;
       }
       
       keyword = keyword.toLowerCase();
       const rows = treeContainer.querySelectorAll('span[style*="white-space: nowrap"]');
-      let matchCount = 0;
-      let firstMatch = null;
+      matchElements = [];
       
       rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         const isMatch = text.includes(keyword);
         
         if (isMatch) {
-          matchCount++;
           row.style.background = '#ffeb3b';
-          if (!firstMatch) firstMatch = row;
+          matchElements.push(row);
         } else {
           row.style.background = '';
         }
       });
       
-      countDiv.textContent = matchCount > 0 ? `找到 ${matchCount} 个匹配` : '未找到';
+      currentMatchIndex = 0;
+      countDiv.textContent = matchElements.length > 0 ? `找到 ${matchElements.length} 个匹配` : '未找到';
       
       // 自动展开匹配节点的父节点
-      if (firstMatch) {
-        let parent = firstMatch.parentElement;
-        while (parent && parent !== treeContainer) {
-          if (parent.style.display === 'none' && parent.previousSibling) {
-            // 展开父节点
-            const toggleIcon = parent.previousSibling.querySelector('.tree-toggle');
-            if (toggleIcon) {
-              parent.style.display = 'block';
-              toggleIcon.textContent = '−';
-            }
-          }
-          parent = parent.parentElement;
-        }
+      if (matchElements.length > 0) {
+        matchElements.forEach(row => {
+          expandParentNodes(row, treeContainer);
+        });
       }
+    }
+    
+    // 展开节点的父节点
+    function expandParentNodes(row, treeContainer) {
+      let parent = row.parentElement;
+      while (parent && parent !== treeContainer) {
+        if (parent.style.display === 'none' && parent.previousSibling) {
+          const toggleIcon = parent.previousSibling.querySelector('.tree-toggle');
+          if (toggleIcon) {
+            parent.style.display = 'block';
+            toggleIcon.textContent = '−';
+          }
+        }
+        parent = parent.parentElement;
+      }
+    }
+    
+    // 跳转到下一个匹配
+    function goToNextMatch() {
+      if (matchElements.length === 0) {
+        showToast('没有搜索结果', 'warning');
+        return;
+      }
+      
+      // 移除当前高亮
+      matchElements.forEach(el => el.style.border = '');
+      
+      // 移动到下一个
+      currentMatchIndex = (currentMatchIndex + 1) % matchElements.length;
+      
+      // 高亮当前
+      const currentEl = matchElements[currentMatchIndex];
+      currentEl.style.border = '2px solid #e94560';
+      currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // 更新计数显示
+      document.getElementById('layoutSearchCount').textContent = `${currentMatchIndex + 1}/${matchElements.length}`;
     }
 
     function exportLayout() {
