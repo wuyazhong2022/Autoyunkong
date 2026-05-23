@@ -1006,7 +1006,8 @@ app.ws.use(route.all('/', function (ctx) {
     ws.on('message', function (message) {
         try {
             const msg = JSON.parse(message);
-            console.log(`[WS消息] action=${msg.action}, role=${msg.role || 'none'}, deviceId=${msg.deviceId || 'none'}`);
+            console.log(`[WS消息] 原始消息: ${message}`);
+            console.log(`[WS消息] 解析后: action=${msg.action}, role=${msg.role || 'none'}, deviceId=${msg.deviceId || 'none'}, username=${msg.username || 'none'}`);
 
             // 处理登录请求（安卓设备）
             if (msg.action === 'login' && !msg.role) {
@@ -1071,9 +1072,13 @@ app.ws.use(route.all('/', function (ctx) {
             // 处理Web管理端登录
             if (msg.action === 'login' && msg.role === 'web') {
                 const username = msg.username;
+                console.log('[Web登录] 收到Web客户端登录请求, username:', username);
                 webClients.set(username, ws);
-                console.log('Web管理端登录:', username);
-                ws.send(JSON.stringify({ action: 'webLoginAck', status: 'success' }));
+                console.log('[Web登录] 已注册到 webClients, 当前客户端数:', webClients.size);
+                const response = JSON.stringify({ action: 'webLoginAck', status: 'success' });
+                console.log('[Web登录] 准备发送响应:', response);
+                ws.send(response);
+                console.log('[Web登录] 响应已发送');
                 return;
             }
 
