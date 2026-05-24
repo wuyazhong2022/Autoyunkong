@@ -389,8 +389,10 @@
     // 检查是否已登录
     const currentUser = localStorage.getItem('currentUser');
     if (currentUser) {
-      // 已登录，跳转到管理页面
-      window.location.href = '/index.html';
+      // 已登录，跳转到管理页面（延迟执行避免冲突）
+      setTimeout(function() {
+        window.location.href = '/index.html';
+      }, 100);
     }
   </script>
 </body>
