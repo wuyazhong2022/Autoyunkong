@@ -797,6 +797,9 @@ function handleLayoutData(deviceId, deviceName, layout, error) {
     return;
   }
   
+  // 保存布局数据供导出使用
+  currentLayoutData = layout;
+  
   // 转发布局数据给布局分析窗口
   if (layoutWindow && !layoutWindow.closed) {
     console.log('[布局] 转发布局数据给布局分析窗口');
@@ -833,11 +836,19 @@ function showLayoutModal(deviceId, deviceName, layout) {
             <button onclick="closeLayoutModal()" style="background: rgba(255,100,100,0.8); border: none; color: white; width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 16px;" title="关闭">×</button>
           </div>
         </div>
-        <div id="layoutToolbar" style="padding: 10px; background: #f8f9fa; border-bottom: 1px solid #ddd;">
+        <div id="layoutToolbar" style="padding: 10px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 10px;">
           <input id="layoutSearch" type="text" placeholder="🔍 搜索 className/text/id/desc..." 
-            style="width: 300px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;"
+            style="width: 200px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;"
             oninput="searchLayoutTree(this.value)">
-          <span id="layoutSearchCount" style="margin-left: 10px; font-size: 12px; color: #666;"></span>
+          <button id="btnNextMatch" onclick="goToNextMatch()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; font-size: 13px;" title="下一个匹配">⬇️ 下一个</button>
+          <span id="layoutSearchCount" style="font-size: 12px; color: #666;"></span>
+          <div style="flex: 1;"></div>
+          <button onclick="expandAll()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; font-size: 13px;" title="全部展开">⬆️ 展开</button>
+          <button onclick="collapseAll()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; font-size: 13px;" title="全部折叠">⬇️ 折叠</button>
+          <button onclick="copySelectedJson()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; font-size: 13px;" title="复制JSON">📋 复制</button>
+          <button onclick="refreshLayout()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; font-size: 13px;" title="刷新">🔄 刷新</button>
+          <button onclick="exportLayout()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; font-size: 13px;" title="导出">📥 导出</button>
+          <button onclick="clearLayout()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; font-size: 13px;" title="清空">🗑️ 清空</button>
         </div>
         <div id="layoutBody" style="display: flex; flex: 1; overflow: hidden;">
           <div style="width: 40%; overflow-y: auto; border-right: 1px solid #ddd; padding: 10px;">
@@ -1089,6 +1100,8 @@ function closeLayoutModal() {
 
 // ==================== 布局树搜索功能 ====================
 let currentLayoutData = null;
+let currentMatchIndex = 0;
+let matchElements = [];
 
 function searchLayoutTree(keyword) {
   const countDiv = document.getElementById('layoutSearchCount');
@@ -1101,36 +1114,151 @@ function searchLayoutTree(keyword) {
       el.classList.remove('search-highlight');
       el.style.background = '';
     });
+    matchElements = [];
+    currentMatchIndex = 0;
     return;
   }
   
   keyword = keyword.toLowerCase();
   const rows = treeContainer.querySelectorAll('span[style*="white-space: nowrap"]');
-  let matchCount = 0;
-  let firstMatch = null;
+  matchElements = [];
+  currentMatchIndex = 0;
   
   rows.forEach(row => {
     const text = row.textContent.toLowerCase();
     const isMatch = text.includes(keyword);
     
     if (isMatch) {
-      matchCount++;
+      matchElements.push(row);
       row.style.background = '#ffeb3b';
-      row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      if (!firstMatch) firstMatch = row;
     } else {
       row.style.background = '';
     }
   });
   
-  countDiv.textContent = `找到 ${matchCount} 个匹配`;
+  countDiv.textContent = matchElements.length > 0 ? `${currentMatchIndex + 1}/${matchElements.length}` : '找到 0 个匹配';
   
   // 滚动到第一个匹配
-  if (firstMatch) {
+  if (matchElements.length > 0) {
     setTimeout(() => {
-      firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      matchElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
   }
+}
+
+// 跳转到下一个匹配
+function goToNextMatch() {
+  if (matchElements.length === 0) {
+    alert('没有搜索结果');
+    return;
+  }
+  
+  // 移除当前高亮
+  matchElements.forEach(el => el.style.border = '');
+  
+  // 移动到下一个
+  currentMatchIndex = (currentMatchIndex + 1) % matchElements.length;
+  
+  // 高亮当前
+  const currentEl = matchElements[currentMatchIndex];
+  currentEl.style.border = '2px solid #e94560';
+  currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  
+  // 更新计数显示
+  document.getElementById('layoutSearchCount').textContent = `${currentMatchIndex + 1}/${matchElements.length}`;
+}
+
+// 全部展开
+function expandAll() {
+  const treeContainer = document.getElementById('layoutTree');
+  if (!treeContainer) return;
+  
+  const toggleIcons = treeContainer.querySelectorAll('.tree-toggle');
+  toggleIcons.forEach(icon => {
+    if (icon.textContent === '+') {
+      icon.click();
+    }
+  });
+  alert('已全部展开');
+}
+
+// 全部折叠
+function collapseAll() {
+  const treeContainer = document.getElementById('layoutTree');
+  if (!treeContainer) return;
+  
+  const toggleIcons = treeContainer.querySelectorAll('.tree-toggle');
+  Array.from(toggleIcons).reverse().forEach(icon => {
+    if (icon.textContent === '−') {
+      icon.click();
+    }
+  });
+  alert('已全部折叠');
+}
+
+// 复制JSON
+function copySelectedJson() {
+  const jsonDiv = document.getElementById('layoutJson');
+  if (!jsonDiv) {
+    alert('JSON面板不存在');
+    return;
+  }
+  
+  const jsonText = jsonDiv.textContent;
+  if (!jsonText || jsonText === '// 点击左侧树形结构中的节点查看详情') {
+    alert('没有可复制的JSON数据');
+    return;
+  }
+  
+  navigator.clipboard.writeText(jsonText).then(() => {
+    alert('JSON已复制到剪贴板');
+  }).catch(err => {
+    const textarea = document.createElement('textarea');
+    textarea.value = jsonText;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+    alert('JSON已复制到剪贴板');
+  });
+}
+
+// 刷新布局
+function refreshLayout() {
+  if (!currentLayoutDeviceId) return;
+  
+  document.getElementById('layoutContent').innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100%;">⏳ 正在获取布局数据...</div>';
+  
+  sendToDevice(currentLayoutDeviceId, { action: 'getLayout' });
+}
+
+// 导出布局JSON
+function exportLayout() {
+  if (!currentLayoutData) {
+    alert('没有布局数据可导出');
+    return;
+  }
+  
+  const blob = new Blob([JSON.stringify(currentLayoutData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'layout_' + currentLayoutDeviceId + '_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  alert('布局数据已导出');
+}
+
+// 清空布局
+function clearLayout() {
+  currentLayoutData = null;
+  const tree = document.getElementById('layoutTree');
+  const jsonDiv = document.getElementById('layoutJson');
+  const stats = document.getElementById('layoutStats');
+  
+  if (tree) tree.innerHTML = '';
+  if (jsonDiv) jsonDiv.textContent = '// 点击左侧树形结构中的节点查看详情';
+  if (stats) stats.innerHTML = '暂无数据';
 }
 
 // ==================== 设备日志模态框功能 ====================
