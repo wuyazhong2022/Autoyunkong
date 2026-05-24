@@ -159,10 +159,13 @@
   </div>
 
   <div class="toolbar">
-    <input id="layoutSearch" type="text" placeholder="🔍 搜索 className/text/id/desc..." style="width: 280px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;" oninput="searchLayoutTree(this.value)">
+    <input id="layoutSearch" type="text" placeholder="🔍 搜索 className/text/id/desc..." style="width: 200px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;" oninput="searchLayoutTree(this.value)">
     <button id="btnNextMatch" onclick="goToNextMatch()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;" title="下一个匹配">⬇️ 下一个</button>
     <span id="layoutSearchCount" style="margin-left: 10px; font-size: 12px; color: #666;"></span>
     <div style="flex: 1;"></div>
+    <button onclick="expandAll()" title="全部展开">⬆️ 展开</button>
+    <button onclick="collapseAll()" title="全部折叠">⬇️ 折叠</button>
+    <button onclick="copySelectedJson()" title="复制JSON">📋 复制</button>
     <button onclick="refreshLayout()">🔄 刷新</button>
     <button onclick="exportLayout()">📥 导出</button>
     <button onclick="clearLayout()">🗑️ 清空</button>
@@ -519,6 +522,67 @@
       toast.textContent = message;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 2000);
+    }
+
+    // 全部展开
+    function expandAll() {
+      const treeContainer = document.getElementById('layoutTree');
+      if (!treeContainer) return;
+      
+      // 获取所有可展开的节点
+      const toggleIcons = treeContainer.querySelectorAll('.tree-toggle');
+      toggleIcons.forEach(icon => {
+        if (icon.textContent === '+') {
+          icon.click();
+        }
+      });
+      showToast('已全部展开', 'success');
+    }
+
+    // 全部折叠
+    function collapseAll() {
+      const treeContainer = document.getElementById('layoutTree');
+      if (!treeContainer) return;
+      
+      // 获取所有可折叠的节点（按逆序处理，即从叶子节点开始）
+      const toggleIcons = treeContainer.querySelectorAll('.tree-toggle');
+      // 逆序处理，确保从内到外折叠
+      Array.from(toggleIcons).reverse().forEach(icon => {
+        if (icon.textContent === '−') {
+          icon.click();
+        }
+      });
+      showToast('已全部折叠', 'success');
+    }
+
+    // 复制当前选中的JSON
+    let currentSelectedNode = null;
+    
+    function copySelectedJson() {
+      const jsonPanel = document.getElementById('layoutJson');
+      if (!jsonPanel) {
+        showToast('JSON面板不存在', 'error');
+        return;
+      }
+      
+      const jsonText = jsonPanel.textContent;
+      if (!jsonText || jsonText === '// 点击左侧树形结构中的节点查看详情') {
+        showToast('没有可复制的JSON数据', 'warning');
+        return;
+      }
+      
+      navigator.clipboard.writeText(jsonText).then(() => {
+        showToast('JSON已复制到剪贴板', 'success');
+      }).catch(err => {
+        // 降级方案
+        const textarea = document.createElement('textarea');
+        textarea.value = jsonText;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+        showToast('JSON已复制到剪贴板', 'success');
+      });
     }
 
     // 页面加载完成后初始化
