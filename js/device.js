@@ -77,6 +77,7 @@ function updateDeviceTable(deviceList) {
             <button class="danger" onclick="stopCodeForDevice('${device.deviceId}')" ${!isOnline ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>终止代码</button>
             <button onclick="viewDeviceCode('${device.deviceId}')" ${!isOnline ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>查看代码</button>
             <button onclick="openDeviceLog('${device.deviceId}')" ${!isOnline ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>查看日志</button>
+            <button onclick="openDeviceLogFile('${device.deviceId}')" ${!isOnline ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>日志文件</button>
             <button onclick="remoteScreen('${device.deviceId}')" ${!isOnline ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>远程投屏</button>
             <button onclick="editDevice('${device.deviceId}')">编辑</button>
             <button class="danger" onclick="deleteDevice('${device.deviceId}')">删除</button>
