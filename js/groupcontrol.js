@@ -134,6 +134,9 @@ function gcContextAction(action) {
     case 'viewLog':
       openDeviceLog(deviceId);
       break;
+    case 'openLogFile':
+      openDeviceLogFile(deviceId);
+      break;
     case 'layoutAnalysis':
       startLayoutAnalysis(deviceId);
       break;
